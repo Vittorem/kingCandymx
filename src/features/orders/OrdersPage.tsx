@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Button, Segmented, message } from 'antd';
+import { Button, Segmented, message, DatePicker } from 'antd';
 import { PlusOutlined, UnorderedListOutlined, AppstoreOutlined } from '@ant-design/icons';
 import { useFirestoreSubscription, useFirestoreMutation } from '../../hooks/useFirestore';
 import { Order, OrderStatus } from '../../types';
@@ -59,17 +59,39 @@ export const OrdersPage = () => {
         }
     };
 
+    const [selectedMonth, setSelectedMonth] = useState(dayjs());
+
+    const filteredOrders = orders.filter(o => {
+        // Prioritize delivery date, otherwise creation date
+        const dateToUse = o.deliveredAt ? dayjs(o.deliveredAt.toDate()) : (
+            o.deliveryDate ? dayjs(o.deliveryDate.seconds * 1000) : (o.createdAt ? dayjs(o.createdAt.toDate()) : null)
+        );
+
+        if (!dateToUse) return false;
+        return dateToUse.isSame(selectedMonth, 'month') && dateToUse.isSame(selectedMonth, 'year');
+    });
+
     return (
         <div style={{ height: '100%' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
-                <Segmented<string>
-                    options={[
-                        { label: 'Kanban', value: 'Kanban', icon: <AppstoreOutlined /> },
-                        { label: 'Lista', value: 'List', icon: <UnorderedListOutlined /> }
-                    ]}
-                    value={viewMode}
-                    onChange={(val) => setViewMode(val as any)}
-                />
+                <div style={{ display: 'flex', gap: 16 }}>
+                    <Segmented<string>
+                        options={[
+                            { label: 'Kanban', value: 'Kanban', icon: <AppstoreOutlined /> },
+                            { label: 'Lista', value: 'List', icon: <UnorderedListOutlined /> }
+                        ]}
+                        value={viewMode}
+                        onChange={(val) => setViewMode(val as any)}
+                    />
+                    <DatePicker
+                        picker="month"
+                        value={selectedMonth}
+                        onChange={(val) => val && setSelectedMonth(val)}
+                        allowClear={false}
+                        format="MMMM YYYY"
+                        placeholder="Seleccionar Mes"
+                    />
+                </div>
                 <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>
                     Nuevo Pedido
                 </Button>
@@ -77,13 +99,13 @@ export const OrdersPage = () => {
 
             {viewMode === 'Kanban' ? (
                 <OrderKanbanBoard
-                    orders={orders}
+                    orders={filteredOrders}
                     onStatusChange={handleStatusChange}
                     onEditOrder={handleEdit}
                 />
             ) : (
                 <OrderList
-                    orders={orders}
+                    orders={filteredOrders}
                     onEdit={handleEdit}
                     onDelete={handleDelete}
                 />

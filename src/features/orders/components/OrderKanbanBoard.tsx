@@ -26,14 +26,13 @@ const COLUMNS: OrderStatus[] = ['Pendiente', 'Confirmado', 'En preparación', 'L
 
 // Sortable Item (The Card)
 function SortableItem({ order, onClick }: { order: Order; onClick: () => void }) {
-    const { attributes, listeners, setNodeRef, transform, transition } = useDraggable({
+    const { attributes, listeners, setNodeRef, transform } = useDraggable({
         id: order.id,
         data: { order }
     });
 
     const style = {
         transform: CSS.Translate.toString(transform),
-        transition,
         marginBottom: 8,
         cursor: 'grab',
     };

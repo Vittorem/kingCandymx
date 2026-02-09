@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Table, Tag, Space, Button, Input, DatePicker, Select } from 'antd';
 import { EditOutlined, DeleteOutlined } from '@ant-design/icons';
-import { Order, OrderStatus } from '../../../types';
+import { Order, OrderStatus } from '../../types';
 import dayjs from 'dayjs';
 
 interface OrderListProps {
