@@ -1,4 +1,3 @@
-import dayjs from 'dayjs';
 import { Order } from '../types';
 import { getOrderDate } from './dateHelpers';
 

@@ -34,8 +34,7 @@ import {
 } from '../../utils/channelAnalysis';
 import {
     analyzeTemporalPatterns,
-    formatHoursByTimeBlock,
-    type TemporalAnalysisResult
+    formatHoursByTimeBlock
 } from '../../utils/temporalAnalysis';
 import {
     generateIntelligentAlerts,
