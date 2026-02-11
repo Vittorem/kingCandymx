@@ -1,470 +1,612 @@
-import { useState, useMemo } from 'react';
-import { Card, Row, Col, Statistic, DatePicker, Typography, Alert, Modal, Table, Button, List } from 'antd';
-import { UserOutlined, ShoppingOutlined, RiseOutlined } from '@ant-design/icons';
+import { useMemo, useState } from 'react';
+import { Row, Col, Card, Typography, Statistic, DatePicker, Divider, Button, Modal, List, Result, Tabs, Badge, Tag } from 'antd';
 import {
-    LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RecTooltip, ResponsiveContainer,
-    PieChart, Pie, Cell, BarChart, Bar, Legend
+    DollarOutlined,
+    ShoppingCartOutlined,
+    UserOutlined,
+    RiseOutlined,
+    FallOutlined,
+    ExclamationCircleOutlined,
+    TrophyOutlined,
+    LineChartOutlined,
+    ClockCircleOutlined,
+    AlertOutlined,
+} from '@ant-design/icons';
+import {
+    LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
+    PieChart, Pie, Cell, BarChart, Bar, ResponsiveContainer,
 } from 'recharts';
+import dayjs from 'dayjs';
 import { useFirestoreSubscription } from '../../hooks/useFirestore';
 import { Order, Customer } from '../../types';
-import dayjs from 'dayjs';
-import localizedFormat from 'dayjs/plugin/localizedFormat';
-
-dayjs.extend(localizedFormat);
-
-
-const CustomizedDot = (props: any) => {
-    const { cx, cy, payload } = props;
-    if (payload && payload.isWeekend) {
-        return (
-            <svg x={cx - 5} y={cy - 5} width={10} height={10} fill="#faad14" viewBox="0 0 1024 1024">
-                <circle cx="512" cy="512" r="512" />
-            </svg>
-        );
-    }
-    return (
-        <svg x={cx - 3} y={cy - 3} width={6} height={6} fill="#8884d8" viewBox="0 0 1024 1024">
-            <circle cx="512" cy="512" r="512" />
-        </svg>
-    );
-};
+import { getOrderDate, getDeliveredOrdersInRange } from '../../utils/dateHelpers';
+import { computeDemographics, getInactiveCustomers } from '../../utils/demographicsHelpers';
+import {
+    computeCustomerRFMScores,
+    aggregateRFMSegments,
+    formatRFMForChart,
+    type RFMSegmentResult
+} from '../../utils/rfmAnalysis';
+import {
+    analyzeChannelPerformance,
+    formatChannelForChart,
+    type ChannelPerformance
+} from '../../utils/channelAnalysis';
+import {
+    analyzeTemporalPatterns,
+    formatHoursByTimeBlock,
+    type TemporalAnalysisResult
+} from '../../utils/temporalAnalysis';
+import {
+    generateIntelligentAlerts,
+    type IntelligentAlert,
+    type PeriodMetrics
+} from '../../utils/intelligentAlerts';
 
 const { RangePicker } = DatePicker;
 const { Title } = Typography;
+const COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff7300', '#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
+
+// ─── Small sub-components ────────────────────────────────────────────────────
+
+function KPICard(props: { title: string; value: string | number; prefix?: React.ReactNode; suffix?: React.ReactNode; color?: string }) {
+    return (
+        <Card bordered={false} style={{ borderTop: `3px solid ${props.color || '#1890ff'}` }}>
+            <Statistic title={props.title} value={props.value} prefix={props.prefix} suffix={props.suffix} />
+        </Card>
+    );
+}
+
+interface CustomizedDotProps {
+    cx?: number;
+    cy?: number;
+    value?: number;
+}
+
+function CustomizedDot({ cx = 0, cy = 0, value = 0 }: CustomizedDotProps) {
+    const color = value > 0 ? '#52c41a' : '#ff4d4f';
+    return <circle cx={cx} cy={cy} r={4} stroke={color} strokeWidth={2} fill={color} />;
+}
+
+// ─── Main Component ──────────────────────────────────────────────────────────
 
 export const DashboardPage = () => {
     const { data: orders } = useFirestoreSubscription<Order>('orders');
     const { data: customers } = useFirestoreSubscription<Customer>('customers');
 
     const [dateRange, setDateRange] = useState<[dayjs.Dayjs, dayjs.Dayjs]>([
-        dayjs().startOf('year'),
-        dayjs().endOf('year')
+        dayjs().startOf('month'),
+        dayjs().endOf('month'),
     ]);
+    const [inactiveModalOpen, setInactiveModalOpen] = useState(false);
 
-    // Modals State
-    const [isBestClientModalOpen, setIsBestClientModalOpen] = useState(false);
-    const [isRetentionModalOpen, setIsRetentionModalOpen] = useState(false);
+    // ─── Derived data ─────────────────────────────────────────────────
 
-    // --- Metrics Calculation ---
+    const deliveredOrders = useMemo(
+        () => getDeliveredOrdersInRange(orders, dateRange[0], dateRange[1]),
+        [orders, dateRange]
+    );
+
     const metrics = useMemo(() => {
-        const start = dateRange[0];
-        const end = dateRange[1];
-        const daysDiff = end.diff(start, 'day');
-        // Threshold: <= 35 days -> Daily View, > 35 days -> Monthly View
-        const isDailyView = daysDiff <= 35;
-
-        // Filter valid orders for sales stats: Status 'Entregado'
-        const periodOrders = orders.filter(o => {
-            if (o.status !== 'Entregado') return false;
-            const dateToUse = o.deliveredAt ? dayjs(o.deliveredAt.toDate()) : (o.deliveryDate ? dayjs(o.deliveryDate.seconds * 1000) : null);
-            if (!dateToUse) return false;
-            return dateToUse.isAfter(start) && dateToUse.isBefore(end);
-        });
-
-        const totalSales = periodOrders.reduce((acc, curr) => acc + curr.total, 0);
-        const totalOrders = periodOrders.length;
+        const totalSales = deliveredOrders.reduce((acc, o) => acc + (o.total || 0), 0);
+        const totalOrders = deliveredOrders.length;
         const avgTicket = totalOrders > 0 ? totalSales / totalOrders : 0;
+        const uniqueCustomers = new Set(deliveredOrders.map(o => o.customerId)).size;
 
-        // Active Clients in Period (Unique Customers who bought in this period)
-        const uniqueCustomersInPeriod = new Set(periodOrders.filter(o => o.customerId).map(o => o.customerId)).size;
+        // Product ranking
+        const productCount: Record<string, { qty: number; revenue: number }> = {};
+        deliveredOrders.forEach(o => {
+            const key = o.productNameAtSale || 'Sin Producto';
+            if (!productCount[key]) productCount[key] = { qty: 0, revenue: 0 };
+            productCount[key].qty += o.quantity;
+            productCount[key].revenue += o.total;
+        });
+        const topProducts = Object.entries(productCount)
+            .map(([name, data]) => ({ name, ...data }))
+            .sort((a, b) => b.revenue - a.revenue);
 
-        let weekendSales = 0;
-
-        // Group by Time Unit (Day vs Month)
-        const salesMap: Record<string, { sales: number, isWeekend: boolean }> = {};
-
-        let current = start.clone();
-
-        if (isDailyView) {
-            // Daily Logic
-            current = current.startOf('day');
-            while (current.isBefore(end) || current.isSame(end, 'day')) {
-                const key = current.format('DD/MM');
-                const dayNum = current.day();
-                const isWeekend = [0, 4, 5, 6].includes(dayNum);
-                salesMap[key] = { sales: 0, isWeekend };
-                current = current.add(1, 'day');
-            }
-        } else {
-            // Monthly Logic
-            current = current.startOf('month');
-            while (current.isBefore(end) || current.isSame(end, 'month')) {
-                const key = current.format('MMM');
-                salesMap[key] = { sales: 0, isWeekend: false };
-                current = current.add(1, 'month');
-            }
-        }
-
-        // Fill Data & Calculate Weekend Sales
-        periodOrders.forEach(o => {
-            const dateToUse = o.deliveredAt ? dayjs(o.deliveredAt.toDate()) : (o.deliveryDate ? dayjs(o.deliveryDate.seconds * 1000) : null);
-            if (dateToUse) {
-                const dayNum = dateToUse.day();
-                if ([0, 4, 5, 6].includes(dayNum)) {
-                    weekendSales += o.total;
-                }
-
-                const key = isDailyView ? dateToUse.format('DD/MM') : dateToUse.format('MMM');
-                if (salesMap[key]) {
-                    salesMap[key].sales += o.total;
-                }
+        // Daily trend
+        const dailyMap: Record<string, number> = {};
+        deliveredOrders.forEach(o => {
+            const date = getOrderDate(o);
+            if (date) {
+                const key = date.format('DD/MM');
+                dailyMap[key] = (dailyMap[key] || 0) + o.total;
             }
         });
+        const dailyTrend = Object.entries(dailyMap)
+            .map(([date, ventas]) => ({ date, ventas }))
+            .sort((a, b) => a.date.localeCompare(b.date));
 
-        const weekendSalesPercentage = totalSales > 0 ? (weekendSales / totalSales) * 100 : 0;
+        return { totalSales, totalOrders, avgTicket, uniqueCustomers, topProducts, dailyTrend };
+    }, [deliveredOrders]);
 
-        const chartData = Object.keys(salesMap).map(k => ({
-            name: k,
-            sales: salesMap[k].sales,
-            isWeekend: salesMap[k].isWeekend
-        }));
+    const demographics = useMemo(
+        () => computeDemographics(customers, deliveredOrders),
+        [customers, deliveredOrders]
+    );
 
-        // Top Products
-        const productCount = periodOrders.reduce((acc: any, curr) => {
-            const key = curr.productNameAtSale;
-            acc[key] = (acc[key] || 0) + curr.quantity;
-            return acc;
-        }, {});
-        const topProducts = Object.keys(productCount).map(k => ({ name: k, value: productCount[k] })).sort((a, b) => b.value - a.value).slice(0, 5);
+    const inactiveCustomers = useMemo(
+        () => getInactiveCustomers(customers, orders, dateRange[1]),
+        [customers, orders, dateRange]
+    );
 
-        return { totalSales, totalOrders, avgTicket, chartData, topProducts, weekendSalesPercentage, uniqueCustomersInPeriod };
-    }, [orders, dateRange]);
+    // ─── Previous period for comparisons ──────────────────────────────
 
-    // --- Insights "AI" Heuristics ---
+    const previousPeriodRange = useMemo<[dayjs.Dayjs, dayjs.Dayjs]>(() => {
+        const duration = dateRange[1].diff(dateRange[0], 'days');
+        return [
+            dateRange[0].subtract(duration, 'days'),
+            dateRange[0].subtract(1, 'days'),
+        ];
+    }, [dateRange]);
+
+    const previousDeliveredOrders = useMemo(
+        () => getDeliveredOrdersInRange(orders, previousPeriodRange[0], previousPeriodRange[1]),
+        [orders, previousPeriodRange]
+    );
+
+    const previousMetrics = useMemo(() => {
+        const totalRevenue = previousDeliveredOrders.reduce((acc, o) => acc + (o.total || 0), 0);
+        const totalOrders = previousDeliveredOrders.length;
+        const avgTicket = totalOrders > 0 ? totalRevenue / totalOrders : 0;
+        return { totalRevenue, totalOrders, avgTicket };
+    }, [previousDeliveredOrders]);
+
+    // ─── RFM Analysis ──────────────────────────────────────────────────
+
+    const rfmScores = useMemo(
+        () => computeCustomerRFMScores(customers, orders, dateRange[1]),
+        [customers, orders, dateRange]
+    );
+
+    const rfmSegments = useMemo(
+        () => aggregateRFMSegments(rfmScores),
+        [rfmScores]
+    );
+
+    const rfmChartData = useMemo(
+        () => formatRFMForChart(rfmSegments),
+        [rfmSegments]
+    );
+
+    // ─── Channel Analysis ──────────────────────────────────────────────
+
+    const channelPerformance = useMemo(
+        () => analyzeChannelPerformance(deliveredOrders, previousDeliveredOrders),
+        [deliveredOrders, previousDeliveredOrders]
+    );
+
+    const channelChartData = useMemo(
+        () => formatChannelForChart(channelPerformance),
+        [channelPerformance]
+    );
+
+    // ─── Temporal Analysis ─────────────────────────────────────────────
+
+    const temporalAnalysis = useMemo(
+        () => analyzeTemporalPatterns(deliveredOrders),
+        [deliveredOrders]
+    );
+
+    const timeBlockData = useMemo(
+        () => formatHoursByTimeBlock(temporalAnalysis.byHour),
+        [temporalAnalysis]
+    );
+
+    // ─── Intelligent Alerts ────────────────────────────────────────────
+
+    const currentPeriodMetrics: PeriodMetrics = {
+        totalRevenue: metrics.totalSales,
+        totalOrders: metrics.totalOrders,
+        avgTicket: metrics.avgTicket,
+    };
+
+    const intelligentAlerts = useMemo(
+        () => generateIntelligentAlerts(
+            customers,
+            orders,
+            dateRange[1],
+            currentPeriodMetrics,
+            previousMetrics
+        ),
+        [customers, orders, dateRange, currentPeriodMetrics, previousMetrics]
+    );
+
+    // ─── Insights ─────────────────────────────────────────────────────
+
     const insights = useMemo(() => {
-        const start = dateRange[0];
-        const end = dateRange[1];
+        const items: string[] = [];
+        if (metrics.avgTicket > 0) items.push(`🎯 Ticket promedio: $${metrics.avgTicket.toFixed(0)}`);
+        if (metrics.topProducts.length > 0) items.push(`🏆 Producto estrella: ${metrics.topProducts[0].name}`);
+        if (inactiveCustomers.length > 0) items.push(`⚠️ ${inactiveCustomers.length} cliente(s) sin compra en 30 días`);
+        if (demographics.genderData.length > 0) {
+            const top = demographics.genderData.sort((a, b) => b.value - a.value)[0];
+            items.push(`👥 Mayoría de compradores: ${top.name}`);
+        }
+        return items;
+    }, [metrics, inactiveCustomers, demographics]);
 
-        // 1. BEST CUSTOMER (In Selected Period)
-        // Calculate stats ONLY from filtered orders
-        const periodOrders = orders.filter(o => {
-            if (o.status !== 'Entregado') return false;
-            const dateToUse = o.deliveredAt ? dayjs(o.deliveredAt.toDate()) : (o.deliveryDate ? dayjs(o.deliveryDate.seconds * 1000) : null);
-            if (!dateToUse) return false;
-            return dateToUse.isAfter(start) && dateToUse.isBefore(end);
-        });
+    // ─── Tab Components ────────────────────────────────────────────────
 
-        const periodCustomerStats: Record<string, { totalSpent: number, count: number }> = {};
-        periodOrders.forEach(o => {
-            if (!o.customerId) return;
-            if (!periodCustomerStats[o.customerId]) {
-                periodCustomerStats[o.customerId] = { totalSpent: 0, count: 0 };
-            }
-            periodCustomerStats[o.customerId].totalSpent += o.total;
-            periodCustomerStats[o.customerId].count += 1;
-        });
+    const rfmTabContent = (
+        <Row gutter={[16, 16]}>
+            <Col xs={24} md={10}>
+                <Card title="Distribución de Segmentos" size="small">
+                    <ResponsiveContainer width="100%" height={300}>
+                        <PieChart>
+                            <Pie
+                                data={rfmChartData}
+                                dataKey="value"
+                                nameKey="name"
+                                cx="50%"
+                                cy="50%"
+                                outerRadius={100}
+                                label
+                            >
+                                {rfmChartData.map((_, i) => (
+                                    <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                                ))}
+                            </Pie>
+                            <Tooltip />
+                            <Legend />
+                        </PieChart>
+                    </ResponsiveContainer>
+                </Card>
+            </Col>
+            <Col xs={24} md={14}>
+                <Card title="Detalle por Segmento" size="small">
+                    <List
+                        dataSource={rfmSegments}
+                        renderItem={(segment: RFMSegmentResult) => (
+                            <List.Item>
+                                <List.Item.Meta
+                                    title={`${segment.segment} (${segment.count} clientes)`}
+                                    description={`Revenue: $${segment.totalRevenue.toFixed(2)} • Ticket Promedio: $${segment.avgOrderValue.toFixed(2)}`}
+                                />
+                            </List.Item>
+                        )}
+                    />
+                </Card>
+            </Col>
+        </Row>
+    );
 
-        // Enrich Customers
-        const validCustomersForRanking = customers.map(c => ({
-            ...c,
-            periodSpent: periodCustomerStats[c.id]?.totalSpent || 0,
-            periodOrders: periodCustomerStats[c.id]?.count || 0
-        })).filter(c => c.periodSpent > 0);
+    const channelTabContent = (
+        <Row gutter={[16, 16]}>
+            <Col xs={24}>
+                <Card title="Comparación de Canales" size="small">
+                    <ResponsiveContainer width="100%" height={400}>
+                        <BarChart data={channelChartData}>
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="name" />
+                            <YAxis yAxisId="left" />
+                            <YAxis yAxisId="right" orientation="right" />
+                            <Tooltip />
+                            <Legend />
+                            <Bar yAxisId="left" dataKey="pedidos" fill="#8884d8" name="Pedidos" />
+                            <Bar yAxisId="right" dataKey="revenue" fill="#82ca9d" name="Revenue ($)" />
+                        </BarChart>
+                    </ResponsiveContainer>
+                </Card>
+            </Col>
+            <Col xs={24}>
+                <Card title="Métricas Detalladas" size="small">
+                    <List
+                        dataSource={channelPerformance}
+                        renderItem={(channel: ChannelPerformance) => (
+                            <List.Item>
+                                <List.Item.Meta
+                                    title={channel.channelName}
+                                    description={
+                                        <>
+                                            <span>Pedidos: {channel.orders} • </span>
+                                            <span>Revenue: ${channel.revenue.toFixed(2)} • </span>
+                                            <span>Ticket Avg: ${channel.avgTicket.toFixed(2)}</span>
+                                        </>
+                                    }
+                                />
+                                <Tag color={channel.growth >= 0 ? 'green' : 'red'}>
+                                    {channel.growth >= 0 ? <RiseOutlined /> : <FallOutlined />}
+                                    {' '}{Math.abs(channel.growth).toFixed(1)}%
+                                </Tag>
+                            </List.Item>
+                        )}
+                    />
+                </Card>
+            </Col>
+        </Row>
+    );
 
-        // Rank All Customers (B2C + B2B)
-        const rankedCustomers = validCustomersForRanking
-            .sort((a, b) => b.periodSpent - a.periodSpent)
-            .slice(0, 10);
+    const temporalTabContent = (
+        <Row gutter={[16, 16]}>
+            <Col xs={24} md={12}>
+                <Card title="Pedidos por Día de la Semana" size="small">
+                    <ResponsiveContainer width="100%" height={300}>
+                        <BarChart data={temporalAnalysis.byDay}>
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="name" />
+                            <YAxis />
+                            <Tooltip />
+                            <Bar dataKey="orders" fill="#1890ff" name="Pedidos" />
+                        </BarChart>
+                    </ResponsiveContainer>
+                    <div style={{ marginTop: 16, textAlign: 'center' }}>
+                        <Typography.Text strong>Día Pico: </Typography.Text>
+                        <Tag color="blue">{temporalAnalysis.peakDay}</Tag>
+                    </div>
+                </Card>
+            </Col>
+            <Col xs={24} md={12}>
+                <Card title="Distribución por Horario" size="small">
+                    <ResponsiveContainer width="100%" height={300}>
+                        <BarChart data={timeBlockData}>
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="name" />
+                            <YAxis />
+                            <Tooltip />
+                            <Bar dataKey="orders" fill="#82ca9d" name="Pedidos" />
+                        </BarChart>
+                    </ResponsiveContainer>
+                    <div style={{ marginTop: 16, textAlign: 'center' }}>
+                        <Typography.Text strong>Hora Pico: </Typography.Text>
+                        <Tag color="green">{temporalAnalysis.peakHour}</Tag>
+                    </div>
+                </Card>
+            </Col>
+        </Row>
+    );
 
-        const bestCustomer = rankedCustomers[0];
+    const alertsTabContent = (
+        <Row gutter={[16, 16]}>
+            <Col xs={24}>
+                {intelligentAlerts.length === 0 ? (
+                    <Card>
+                        <Result
+                            status="success"
+                            title="Sin Alertas"
+                            subTitle="Todo está funcionando correctamente. No hay alertas en este momento."
+                        />
+                    </Card>
+                ) : (
+                    <List
+                        dataSource={intelligentAlerts}
+                        renderItem={(alert: IntelligentAlert) => {
+                            const severityColors = { HIGH: 'red', MEDIUM: 'orange', LOW: 'blue' };
+                            return (
+                                <Card
+                                    size="small"
+                                    style={{
+                                        marginBottom: 16,
+                                        borderLeft: `4px solid ${severityColors[alert.severity]}`
+                                    }}
+                                >
+                                    <List.Item>
+                                        <List.Item.Meta
+                                            avatar={<Badge status={alert.severity === 'HIGH' ? 'error' : alert.severity === 'MEDIUM' ? 'warning' : 'processing'} />}
+                                            title={
+                                                <>
+                                                    {alert.title}
+                                                    {' '}
+                                                    <Tag color={severityColors[alert.severity]}>
+                                                        {alert.severity}
+                                                    </Tag>
+                                                </>
+                                            }
+                                            description={alert.description}
+                                        />
+                                    </List.Item>
+                                </Card>
+                            );
+                        }}
+                    />
+                )}
+            </Col>
+        </Row>
+    );
 
-        // 2. RETENTION (At Period End)
-        // Check inactivity relative to the END of the selected period.
-        const inactiveThresholdAtEnd = end.subtract(30, 'days');
-
-        const historicalOrders = orders.filter(o => {
-            if (o.status !== 'Entregado') return false;
-            const dateToUse = o.deliveredAt ? dayjs(o.deliveredAt.toDate()) : (o.deliveryDate ? dayjs(o.deliveryDate.seconds * 1000) : null);
-            if (!dateToUse) return false;
-            return dateToUse.isBefore(end); // strictly before (or same) as end of period
-        });
-
-        const customerLastDates: Record<string, dayjs.Dayjs> = {};
-        historicalOrders.forEach(o => {
-            const dateToUse = o.deliveredAt ? dayjs(o.deliveredAt.toDate()) : (o.deliveryDate ? dayjs(o.deliveryDate.seconds * 1000) : null);
-            if (dateToUse && o.customerId) {
-                if (!customerLastDates[o.customerId] || dateToUse.isAfter(customerLastDates[o.customerId])) {
-                    customerLastDates[o.customerId] = dateToUse;
-                }
-            }
-        });
-
-        const inactiveCustomers = customers.filter(c => {
-            const lastDate = customerLastDates[c.id];
-            if (!lastDate) return false;
-            return lastDate.isBefore(inactiveThresholdAtEnd);
-        });
-
-        // 3. DEMOGRAPHICS (Gender, Age, Occupation)
-        // Identify unique customers who BOUGHT in this period
-        const uniqueCustomerIds = new Set(periodOrders.map(o => o.customerId));
-        const activeCustomers = customers.filter(c => uniqueCustomerIds.has(c.id));
-
-        // Gender Stats
-        const genderStats: Record<string, number> = { 'Femenino': 0, 'Masculino': 0, 'Otro/ND': 0 };
-        activeCustomers.forEach(c => {
-            if (c.gender === 'F') genderStats['Femenino']++;
-            else if (c.gender === 'M') genderStats['Masculino']++;
-            else genderStats['Otro/ND']++;
-        });
-        const genderData = Object.keys(genderStats).map(k => ({ name: k, value: genderStats[k] })).filter(d => d.value > 0);
-
-        // Age Stats
-        const ageBuckets: Record<string, number> = { '< 20': 0, '20-29': 0, '30-39': 0, '40-49': 0, '50+': 0, 'N/A': 0 };
-        activeCustomers.forEach(c => {
-            if (!c.age) {
-                ageBuckets['N/A']++;
-            } else {
-                if (c.age < 20) ageBuckets['< 20']++;
-                else if (c.age < 30) ageBuckets['20-29']++;
-                else if (c.age < 40) ageBuckets['30-39']++;
-                else if (c.age < 50) ageBuckets['40-49']++;
-                else ageBuckets['50+']++;
-            }
-        });
-        const ageData = Object.keys(ageBuckets).map(k => ({ name: k, value: ageBuckets[k] }));
-
-        // Occupation Stats
-        const occupationStats: Record<string, number> = {};
-        activeCustomers.forEach(c => {
-            const occ = c.occupation ? c.occupation.trim() : 'Sin Dato';
-            occupationStats[occ] = (occupationStats[occ] || 0) + 1;
-        });
-        const topOccupations = Object.keys(occupationStats)
-            .map(k => ({ name: k, value: occupationStats[k] }))
-            .sort((a, b) => b.value - a.value)
-            .slice(0, 5);
-
-        return {
-            inactiveCustomers,
-            inactiveCount: inactiveCustomers.length,
-            bestCustomerName: bestCustomer?.fullName || 'Nadie en este periodo',
-            topCustomers: rankedCustomers.map(c => ({ ...c, totalSpent: c.periodSpent, ordersCount: c.periodOrders })),
-            trendMessage: `El ${metrics.weekendSalesPercentage.toFixed(0)}% de las ventas ocurren en Fin de Semana (Jue-Dom).`,
-            demographics: { genderData, ageData, topOccupations }
-        };
-    }, [customers, metrics, orders, dateRange]);
-
-    // Colors for Recharts
-    const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
+    // ─── Render ───────────────────────────────────────────────────────
 
     return (
-        <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+        <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
                 <Title level={2} style={{ margin: 0 }}>Dashboard</Title>
                 <RangePicker
                     value={dateRange}
-                    onChange={(val) => val && setDateRange([val[0]!, val[1]!])}
-                    allowClear={false}
+                    onChange={(vals) => {
+                        if (vals?.[0] && vals?.[1]) setDateRange([vals[0], vals[1]]);
+                    }}
+                    format="DD/MM/YYYY"
                 />
             </div>
 
-            {/* KPI Cards */}
-            <Row gutter={16} style={{ marginBottom: 24 }}>
-                <Col span={6}>
-                    <Card>
-                        <Statistic title="Ventas Totales" value={metrics.totalSales} precision={2} prefix="$" />
-                    </Card>
+            {/* KPIs */}
+            <Row gutter={[16, 16]}>
+                <Col xs={24} sm={12} lg={6}>
+                    <KPICard title="Ventas Totales" value={`$${metrics.totalSales.toFixed(2)}`} prefix={<DollarOutlined />} color="#52c41a" />
                 </Col>
-                <Col span={6}>
-                    <Card>
-                        <Statistic title="Pedidos Entregados" value={metrics.totalOrders} prefix={<ShoppingOutlined />} />
-                    </Card>
+                <Col xs={24} sm={12} lg={6}>
+                    <KPICard title="Pedidos" value={metrics.totalOrders} prefix={<ShoppingCartOutlined />} color="#1890ff" />
                 </Col>
-                <Col span={6}>
-                    <Card>
-                        <Statistic title="Ticket Promedio" value={metrics.avgTicket} precision={2} prefix="$" />
-                    </Card>
+                <Col xs={24} sm={12} lg={6}>
+                    <KPICard title="Ticket Promedio" value={`$${metrics.avgTicket.toFixed(2)}`} prefix={<RiseOutlined />} color="#faad14" />
                 </Col>
-                <Col span={6}>
-                    <Card>
-                        <Statistic
-                            title="Clientes Activos"
-                            value={metrics.uniqueCustomersInPeriod}
-                            suffix={`/ ${customers.length}`}
-                            prefix={<UserOutlined />}
-                        />
-                        <div style={{ fontSize: 12, color: 'gray' }}>Que compraron en periodo / Total Global</div>
-                    </Card>
+                <Col xs={24} sm={12} lg={6}>
+                    <KPICard title="Clientes Únicos" value={metrics.uniqueCustomers} prefix={<UserOutlined />} color="#722ed1" />
                 </Col>
             </Row>
 
             {/* Charts Row */}
-            <Row gutter={16} style={{ marginBottom: 24 }}>
-                <Col span={16}>
-                    <Card title="Ventas en el Periodo">
-                        <div style={{ height: 300 }}>
-                            <ResponsiveContainer width="100%" height="100%">
-                                <LineChart data={metrics.chartData}>
-                                    <CartesianGrid strokeDasharray="3 3" />
-                                    <XAxis dataKey="name" />
-                                    <YAxis />
-                                    <RecTooltip />
-                                    <Line type="monotone" dataKey="sales" stroke="#8884d8" strokeWidth={2} dot={<CustomizedDot />} />
-                                </LineChart>
-                            </ResponsiveContainer>
-                        </div>
+            <Divider />
+            <Row gutter={[16, 16]}>
+                <Col xs={24} lg={16}>
+                    <Card title="Tendencia de Ventas" size="small">
+                        <ResponsiveContainer width="100%" height={300}>
+                            <LineChart data={metrics.dailyTrend}>
+                                <CartesianGrid strokeDasharray="3 3" />
+                                <XAxis dataKey="date" />
+                                <YAxis />
+                                <Tooltip />
+                                <Legend />
+                                <Line type="monotone" dataKey="ventas" stroke="#1890ff" dot={<CustomizedDot />} />
+                            </LineChart>
+                        </ResponsiveContainer>
                     </Card>
                 </Col>
-                <Col span={8}>
-                    <Card title="Top Productos">
-                        <div style={{ height: 300 }}>
-                            <ResponsiveContainer width="100%" height="100%">
-                                <PieChart>
-                                    <Pie
-                                        data={metrics.topProducts}
-                                        dataKey="value"
-                                        nameKey="name"
-                                        cx="50%"
-                                        cy="50%"
-                                        outerRadius={80}
-                                        fill="#8884d8"
-                                        label
-                                    >
-                                        {metrics.topProducts.map((entry, index) => (
-                                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                        ))}
-                                    </Pie>
-                                    <RecTooltip />
-                                </PieChart>
-                            </ResponsiveContainer>
-                        </div>
+                <Col xs={24} lg={8}>
+                    <Card title={`Productos (${metrics.topProducts.length})`} size="small">
+                        <ResponsiveContainer width="100%" height={Math.max(200, metrics.topProducts.length * 50)}>
+                            <BarChart data={metrics.topProducts} layout="vertical">
+                                <CartesianGrid strokeDasharray="3 3" />
+                                <XAxis type="number" />
+                                <YAxis dataKey="name" type="category" width={100} />
+                                <Tooltip formatter={(value: number | undefined) => [`$${value}`, 'Venta']} />
+                                <Bar dataKey="revenue" radius={[0, 6, 6, 0]}>
+                                    {metrics.topProducts.map((_, i) => (
+                                        <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                                    ))}
+                                </Bar>
+                            </BarChart>
+                        </ResponsiveContainer>
                     </Card>
                 </Col>
             </Row>
 
-            {/* Demographics Row (New) */}
-            <Card title="📊 Demografía de Compradores (En Periodo)" style={{ marginBottom: 24 }}>
-                <Row gutter={16}>
-                    <Col span={8}>
-                        <div style={{ textAlign: 'center', marginBottom: 10, fontWeight: 'bold' }}>Género</div>
-                        <div style={{ height: 250 }}>
-                            <ResponsiveContainer width="100%" height="100%">
-                                <PieChart>
-                                    <Pie
-                                        data={insights.demographics.genderData}
-                                        dataKey="value"
-                                        nameKey="name"
-                                        cx="50%"
-                                        cy="50%"
-                                        outerRadius={80}
-                                        label
-                                    >
-                                        {insights.demographics.genderData.map((entry, index) => (
-                                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                        ))}
-                                    </Pie>
-                                    <RecTooltip />
-                                    <Legend />
-                                </PieChart>
-                            </ResponsiveContainer>
-                        </div>
-                    </Col>
-                    <Col span={8}>
-                        <div style={{ textAlign: 'center', marginBottom: 10, fontWeight: 'bold' }}>Rango de Edad</div>
-                        <div style={{ height: 250 }}>
-                            <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={insights.demographics.ageData}>
-                                    <CartesianGrid strokeDasharray="3 3" />
-                                    <XAxis dataKey="name" />
-                                    <YAxis />
-                                    <RecTooltip />
-                                    <Bar dataKey="value" fill="#8884d8" name="Clientes" />
-                                </BarChart>
-                            </ResponsiveContainer>
-                        </div>
-                    </Col>
-                    <Col span={8}>
-                        <div style={{ textAlign: 'center', marginBottom: 10, fontWeight: 'bold' }}>Top Ocupaciones</div>
-                        <List
-                            size="small"
-                            bordered
-                            dataSource={insights.demographics.topOccupations}
-                            renderItem={(item) => <List.Item><Typography.Text strong>{item.name}</Typography.Text>: {item.value}</List.Item>}
-                        />
-                    </Col>
-                </Row>
+            {/* Demographics Row */}
+            <Divider />
+            <Row gutter={[16, 16]}>
+                <Col xs={24} md={8}>
+                    <Card title="Género de Compradores" size="small">
+                        <ResponsiveContainer width="100%" height={250}>
+                            <PieChart>
+                                <Pie data={demographics.genderData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label>
+                                    {demographics.genderData.map((_, i) => (
+                                        <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                                    ))}
+                                </Pie>
+                                <Tooltip />
+                            </PieChart>
+                        </ResponsiveContainer>
+                    </Card>
+                </Col>
+                <Col xs={24} md={8}>
+                    <Card title="Rango de Edad" size="small">
+                        <ResponsiveContainer width="100%" height={250}>
+                            <BarChart data={demographics.ageData}>
+                                <CartesianGrid strokeDasharray="3 3" />
+                                <XAxis dataKey="name" />
+                                <YAxis />
+                                <Tooltip />
+                                <Bar dataKey="value" fill="#8884d8" />
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </Card>
+                </Col>
+                <Col xs={24} md={8}>
+                    <Card title="Top Ocupaciones" size="small">
+                        <ResponsiveContainer width="100%" height={250}>
+                            <BarChart data={demographics.topOccupations} layout="vertical">
+                                <CartesianGrid strokeDasharray="3 3" />
+                                <XAxis type="number" />
+                                <YAxis dataKey="name" type="category" width={80} />
+                                <Tooltip />
+                                <Bar dataKey="value" fill="#82ca9d" />
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </Card>
+                </Col>
+            </Row>
+
+            {/* Insights */}
+            <Divider />
+            <Card title="✨ Insights" size="small">
+                {insights.length > 0 ? (
+                    <ul style={{ margin: 0, paddingLeft: 16 }}>
+                        {insights.map((insight, i) => (
+                            <li key={i} style={{ marginBottom: 4 }}>{insight}</li>
+                        ))}
+                    </ul>
+                ) : (
+                    <Result
+                        icon={<ExclamationCircleOutlined />}
+                        title="Sin datos suficientes"
+                        subTitle="Registra pedidos entregados para ver insights."
+                    />
+                )}
+                {inactiveCustomers.length > 0 && (
+                    <Button type="link" icon={<FallOutlined />} onClick={() => setInactiveModalOpen(true)}>
+                        Ver {inactiveCustomers.length} cliente(s) inactivos
+                    </Button>
+                )}
             </Card>
 
-            {/* Insights Panel */}
-            <Card title="✨ Insights & Recomendaciones IA" style={{ background: '#f6ffed', borderColor: '#b7eb8f' }}>
-                <Row gutter={16}>
-                    <Col span={8}>
-                        <div onClick={() => setIsBestClientModalOpen(true)} style={{ cursor: 'pointer' }}>
-                            <Alert
-                                message="Mejor Cliente"
-                                description={`${insights.bestCustomerName} es tu cliente más valioso. ¡Envíale una promo! (Click para ver Top 10)`}
-                                type="success"
-                                showIcon
-                            />
-                        </div>
-                    </Col>
-                    <Col span={8}>
-                        <div onClick={() => setIsRetentionModalOpen(true)} style={{ cursor: 'pointer' }}>
-                            <Alert
-                                message="Alerta de Retención"
-                                description={`Tienes ${insights.inactiveCount} clientes (B2B + B2C) que no compran hace 30+ días. (Click para ver listado)`}
-                                type="warning"
-                                showIcon
-                            />
-                        </div>
-                    </Col>
-                    <Col span={8}>
-                        <Alert
-                            message="Tendencia"
-                            description={insights.trendMessage}
-                            type="info"
-                            showIcon
-                            icon={<RiseOutlined />}
-                        />
-                    </Col>
-                </Row>
-            </Card>
-
-            {/* MODAL: BEST CLIENTS */}
-            <Modal
-                title="Top 10 Mejores Clientes (General)"
-                open={isBestClientModalOpen}
-                onCancel={() => setIsBestClientModalOpen(false)}
-                footer={[<Button key="close" onClick={() => setIsBestClientModalOpen(false)}>Cerrar</Button>]}
-            >
-                <Table
-                    dataSource={insights.topCustomers}
-                    rowKey="id"
-                    pagination={false}
-                    size="small"
-                    columns={[
-                        { title: 'Cliente', dataIndex: 'fullName', key: 'name' },
-                        { title: 'Total Gastado', dataIndex: 'totalSpent', key: 'total', render: (val) => `$${(val || 0).toFixed(2)}` },
-                        { title: 'Pedidos', dataIndex: 'ordersCount', key: 'orders' }
+            {/* Advanced Insights Tabs */}
+            <Divider />
+            <Card title="📊 Análisis Avanzado" size="small" style={{ marginBottom: 16 }}>
+                <Tabs
+                    defaultActiveKey="rfm"
+                    items={[
+                        {
+                            key: 'rfm',
+                            label: (
+                                <span>
+                                    <TrophyOutlined /> RFM Analysis
+                                </span>
+                            ),
+                            children: rfmTabContent,
+                        },
+                        {
+                            key: 'channels',
+                            label: (
+                                <span>
+                                    <LineChartOutlined /> Canales
+                                </span>
+                            ),
+                            children: channelTabContent,
+                        },
+                        {
+                            key: 'temporal',
+                            label: (
+                                <span>
+                                    <ClockCircleOutlined /> Patrones Temporales
+                                </span>
+                            ),
+                            children: temporalTabContent,
+                        },
+                        {
+                            key: 'alerts',
+                            label: (
+                                <span>
+                                    <AlertOutlined />
+                                    {' '}Alertas
+                                    {intelligentAlerts.length > 0 && (
+                                        <Badge
+                                            count={intelligentAlerts.length}
+                                            style={{ marginLeft: 8 }}
+                                        />
+                                    )}
+                                </span>
+                            ),
+                            children: alertsTabContent,
+                        },
                     ]}
                 />
-            </Modal>
+            </Card>
 
-            {/* MODAL: RETENTION ALERT */}
+            {/* Inactive customers modal */}
             <Modal
-                title="Clientes en Riesgo (Sin compra > 30 días)"
-                open={isRetentionModalOpen}
-                onCancel={() => setIsRetentionModalOpen(false)}
-                footer={[<Button key="close" onClick={() => setIsRetentionModalOpen(false)}>Cerrar</Button>]}
+                title="Clientes Inactivos (30+ días sin compra)"
+                open={inactiveModalOpen}
+                onCancel={() => setInactiveModalOpen(false)}
+                footer={null}
             >
-                <Table
-                    dataSource={insights.inactiveCustomers}
-                    rowKey="id"
-                    pagination={{ pageSize: 5 }}
-                    size="small"
-                    columns={[
-                        { title: 'Cliente', dataIndex: 'fullName', key: 'name' },
-                        { title: 'Última Compra', dataIndex: 'lastDeliveredAt', key: 'last', render: (d) => d ? dayjs(d.toDate()).format('DD/MM/YYYY') : 'N/A' },
-                        {
-                            title: 'Días Inactivo',
-                            key: 'days',
-                            render: (_, r) => {
-                                if (!r.lastDeliveredAt) return '-';
-                                return dayjs().diff(dayjs(r.lastDeliveredAt.toDate()), 'day');
-                            }
-                        }
-                    ]}
+                <List
+                    dataSource={inactiveCustomers}
+                    renderItem={c => (
+                        <List.Item>
+                            <List.Item.Meta title={c.fullName} description={c.phone} />
+                        </List.Item>
+                    )}
                 />
             </Modal>
         </div>
