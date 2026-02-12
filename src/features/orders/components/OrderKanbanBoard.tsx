@@ -1,20 +1,16 @@
-import { useMemo } from 'react';
 import {
     DndContext,
-    DragOverlay,
     useSensors,
     useSensor,
     PointerSensor,
-    DragStartEvent,
     DragEndEvent,
-    closestCenter
+    closestCenter,
 } from '@dnd-kit/core';
-import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import { Order, OrderStatus } from '../../../types';
+import { Order, OrderStatus, KANBAN_STATUSES } from '../../../types';
 import { Card, Tag, Typography } from 'antd';
-import { useDroppable } from '@dnd-kit/core';
-import { useDraggable } from '@dnd-kit/core';
+import { useDroppable, useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
+import { toDay, getOrderDate } from '../../../utils/dateHelpers';
 
 interface KanbanBoardProps {
     orders: Order[];
@@ -22,24 +18,25 @@ interface KanbanBoardProps {
     onEditOrder: (order: Order) => void;
 }
 
-const COLUMNS: OrderStatus[] = ['Pendiente', 'Confirmado', 'En preparación', 'Listo para entregar', 'Entregado'];
+// ─── Draggable Card ──────────────────────────────────────────────────────────
 
-// Sortable Item (The Card)
 function SortableItem({ order, onClick }: { order: Order; onClick: () => void }) {
     const { attributes, listeners, setNodeRef, transform } = useDraggable({
         id: order.id,
-        data: { order }
+        data: { order },
     });
 
     const style = {
         transform: CSS.Translate.toString(transform),
         marginBottom: 8,
-        cursor: 'grab',
+        cursor: 'grab' as const,
     };
+
+    const dateStr = toDay(order.deliveryDate)?.format('DD/MM/YYYY') ?? '-';
 
     return (
         <div ref={setNodeRef} style={style} {...listeners} {...attributes}>
-            <Card size="small" hoverable onClick={onClick} bodyStyle={{ padding: 12 }}>
+            <Card size="small" hoverable onClick={onClick} styles={{ body: { padding: 12 } }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
                     <Typography.Text strong>{order.customerName}</Typography.Text>
                     <Tag color="blue">${order.total}</Tag>
@@ -48,14 +45,15 @@ function SortableItem({ order, onClick }: { order: Order; onClick: () => void })
                     {order.productNameAtSale} ({order.flavorNameAtSale}) x {order.quantity}
                 </div>
                 <div style={{ fontSize: 11, color: '#999', marginTop: 4 }}>
-                    {new Date(order.deliveryDate.seconds * 1000).toLocaleDateString()}
+                    {dateStr}
                 </div>
             </Card>
         </div>
     );
 }
 
-// Droppable Column
+// ─── Droppable Column ────────────────────────────────────────────────────────
+
 function KanbanColumn({ status, orders, onEdit }: { status: OrderStatus; orders: Order[]; onEdit: (o: Order) => void }) {
     const { setNodeRef } = useDroppable({ id: status });
 
@@ -73,6 +71,8 @@ function KanbanColumn({ status, orders, onEdit }: { status: OrderStatus; orders:
     );
 }
 
+// ─── Board ───────────────────────────────────────────────────────────────────
+
 export const OrderKanbanBoard = ({ orders, onStatusChange, onEditOrder }: KanbanBoardProps) => {
     const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
@@ -83,7 +83,6 @@ export const OrderKanbanBoard = ({ orders, onStatusChange, onEditOrder }: Kanban
         const orderId = active.id as string;
         const newStatus = over.id as OrderStatus;
 
-        // Find if status changed
         const order = orders.find(o => o.id === orderId);
         if (order && order.status !== newStatus) {
             onStatusChange(orderId, newStatus);
@@ -93,11 +92,20 @@ export const OrderKanbanBoard = ({ orders, onStatusChange, onEditOrder }: Kanban
     return (
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
             <div style={{ display: 'flex', gap: 16, overflowX: 'auto', paddingBottom: 16, height: 'calc(100vh - 200px)' }}>
-                {COLUMNS.map(status => (
+                {KANBAN_STATUSES.map(status => (
                     <KanbanColumn
                         key={status}
                         status={status}
-                        orders={orders.filter(o => o.status === status && !o.isDeleted)}
+                        orders={orders
+                            .filter(o => o.status === status)
+                            .sort((a, b) => {
+                                const dateA = getOrderDate(a);
+                                const dateB = getOrderDate(b);
+                                if (!dateA && !dateB) return 0;
+                                if (!dateA) return 1;
+                                if (!dateB) return -1;
+                                return dateA.valueOf() - dateB.valueOf();
+                            })}
                         onEdit={onEditOrder}
                     />
                 ))}
