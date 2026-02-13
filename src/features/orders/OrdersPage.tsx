@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Button, Segmented, message, DatePicker, Card, Statistic, Space, Divider, Typography } from 'antd';
+import { Button, Segmented, message, DatePicker, Statistic, Space, Divider, Typography } from 'antd';
 import { PlusOutlined, UnorderedListOutlined, AppstoreOutlined, CheckCircleOutlined, ClockCircleOutlined } from '@ant-design/icons';
 import { useFirestoreSubscription, useFirestoreMutation } from '../../hooks/useFirestore';
 import { Order, OrderStatus } from '../../types';
