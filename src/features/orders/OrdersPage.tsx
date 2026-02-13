@@ -90,13 +90,16 @@ export const OrdersPage = () => {
                         allowClear={false}
                         format="MMMM YYYY"
                         placeholder="Seleccionar Mes"
-                    />
 
-                    <OrderSummary orders={filteredOrders} />
+                    />
                 </div>
                 <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>
                     Nuevo Pedido
                 </Button>
+            </div>
+
+            <div style={{ marginBottom: 16 }}>
+                <OrderSummary orders={filteredOrders} />
             </div>
 
             {viewMode === 'Kanban' ? (
