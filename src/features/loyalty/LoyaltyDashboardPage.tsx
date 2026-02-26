@@ -70,6 +70,8 @@ export const LoyaltyDashboardPage = () => {
         const isEligible = pts >= LOYALTY_RULES.POINTS_FOR_FREE_BAMBINO;
 
         let msg = '';
+        const firstName = customer.fullName.split(' ')[0] || customer.fullName;
+
         if (isEligible) {
             let rewardText = '';
             if (pts >= LOYALTY_RULES.POINTS_FOR_FREE_GRANDE) {
@@ -82,9 +84,9 @@ export const LoyaltyDashboardPage = () => {
                 const qty = Math.floor(pts / LOYALTY_RULES.POINTS_FOR_FREE_BAMBINO);
                 rewardText = `${qty} Bambino${qty > 1 ? 's' : ''}`;
             }
-            msg = `¡Hola ${customer.fullName}! Tienes ${pts} puntos de lealtad en Tiramisú, ¡suficientes para redimir ${rewardText} gratis en tu próxima visita!`;
+            msg = `Hola ${firstName}, tienes ${pts} puntos de lealtad acumulados en King Candy La Casa Del Tiramisu, ¡suficientes para redimir ${rewardText} gratis! Comunicate con nosotros para saber como redimirlos.`;
         } else {
-            msg = `¡Hola ${customer.fullName}! Tienes ${pts} puntos de lealtad acumulados en Tiramisú. Haz un pedido pronto para llegar a los 6 puntos y ganar premios gratis.`;
+            msg = `Hola ${firstName}, tienes ${pts} puntos de lealtad acumulados en King Candy La Casa Del Tiramisu. ¡Haz un pedido pronto para seguir sumando y ganar premios gratis!`;
         }
 
         const url = `https://wa.me/52${phoneStr}?text=${encodeURIComponent(msg)}`;

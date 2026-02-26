@@ -88,7 +88,8 @@ export const OrdersPage = () => {
                                 onOk: () => {
                                     if (currentCustomer?.phone) {
                                         const phoneStr = currentCustomer.phone.replace(/\D/g, '');
-                                        const msg = `¡Hola! Gracias por tu compra en Tiramisú. Ya cuentas con ${newPoints} puntos de lealtad, ¡suficientes para redimir ${rewardText} gratis en tu próxima visita!`;
+                                        const firstName = currentCustomer.fullName.split(' ')[0] || currentCustomer.fullName;
+                                        const msg = `Hola ${firstName}, gracias por comprar en King Candy La Casa Del Tiramisu, tu compra acumulo ${pointsChange} puntos de lealtad, ahora tienes ${newPoints} puntos acumulados. Comunicate con nosotros para saber como redimirlos.`;
                                         const url = `https://wa.me/52${phoneStr}?text=${encodeURIComponent(msg)}`;
                                         window.open(url, '_blank');
                                     } else {
