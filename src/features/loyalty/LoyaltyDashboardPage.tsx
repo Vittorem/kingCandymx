@@ -141,6 +141,9 @@ export const LoyaltyDashboardPage = () => {
                 <div>
                     <h2>Programa de Lealtad (Dashboard)</h2>
                     <p style={{ color: '#666', margin: 0 }}>Monitorea el uso de puntos de tus clientes y contacta a los más leales.</p>
+                    <Tag color="volcano" style={{ marginTop: 8, fontSize: '13px', padding: '4px 8px' }}>
+                        Regla Oficial: Los clientes sólo pueden hacer redenciones válidas al realizar una compra adicional (dinero nuevo).
+                    </Tag>
                 </div>
                 <Button type="primary" icon={<PlusOutlined />} onClick={handleAddCustomer}>
                     Nuevo Cliente

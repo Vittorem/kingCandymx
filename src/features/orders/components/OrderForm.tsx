@@ -92,8 +92,11 @@ export const OrderForm = ({ open, onClose, onSubmit, initialValues, loading }: O
         const pName = currentSelectedProduct?.name || '';
 
         if (redeemLoyalty && getPointsCostForProduct(pName) > 0) {
-            const maxFree = calculateMaxRedeemableProducts(pName, availablePoints);
-            const freeUnits = Math.min(qty, maxFree);
+            const maxFreeByPoints = calculateMaxRedeemableProducts(pName, availablePoints);
+            // The logic: You can only redeem products IF the total quantity is STRICTLY GREATER than the free units.
+            // E.g. Buy 2, get 1 free (qty 2, maxFree 1 => freeUnits 1). Buy 1, get 1 free (qty 1, maxFree 1 => freeUnits 0).
+            const allowedFreeUnits = Math.min(qty - 1, maxFreeByPoints);
+            const freeUnits = Math.max(0, allowedFreeUnits);
             pLoyaltyDiscount = freeUnits * price;
         }
 
@@ -173,11 +176,16 @@ export const OrderForm = ({ open, onClose, onSubmit, initialValues, loading }: O
                     <div style={{ marginBottom: 16 }}>
                         <Alert
                             message={`Este cliente tiene ${availablePoints} puntos de lealtad.`}
+                            description="Recuerda: Solo se puede redimir un producto gratis si en este pedido se está pagando al menos 1 producto adicional."
                             type="info"
                             showIcon
                             action={
                                 pointsCost === 0 ? (
                                     <Text type="secondary" style={{ fontSize: 12 }}>No aplica para este producto</Text>
+                                ) : (form.getFieldValue('quantity') || 1) <= calculateMaxRedeemableProducts(form.getFieldValue('productNameAtSale') || '', availablePoints) ? (
+                                    <Text type="danger" style={{ fontSize: 12, fontWeight: 'bold' }}>
+                                        Requiere comprar 1 artículo más para poder redimir el saldo.
+                                    </Text>
                                 ) : canRedeem ? (
                                     <Form.Item name="redeemLoyalty" valuePropName="checked" style={{ margin: 0 }}>
                                         <Switch checkedChildren="Redimir" unCheckedChildren="No usar" />
