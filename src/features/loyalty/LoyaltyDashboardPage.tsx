@@ -4,6 +4,7 @@ import { TrophyOutlined, GiftOutlined, WhatsAppOutlined, SearchOutlined, PlusOut
 import { useFirestoreSubscription, useFirestoreMutation } from '../../hooks/useFirestore';
 import { Customer, LoyaltyLedger } from '../../types';
 import { CustomerForm } from '../customers/components/CustomerForm';
+import { LOYALTY_RULES } from '../../utils/loyalty';
 
 export const LoyaltyDashboardPage = () => {
     const { data: customers, loading: loadingCustomers } = useFirestoreSubscription<Customer>('customers');
@@ -66,11 +67,25 @@ export const LoyaltyDashboardPage = () => {
         }
         const phoneStr = customer.phone.replace(/\D/g, '');
         const pts = customer.loyaltyPoints || 0;
-        const isEligible = pts >= 6;
+        const isEligible = pts >= LOYALTY_RULES.POINTS_FOR_FREE_BAMBINO;
 
-        const msg = isEligible
-            ? `¡Hola ${customer.fullName}! Tienes ${pts} puntos de lealtad en Tiramisú, ¡suficientes para redimir un Bambino gratis en tu próxima visita!`
-            : `¡Hola ${customer.fullName}! Tienes ${pts} puntos de lealtad acumulados en Tiramisú. Haz un pedido pronto para llegar a los 6 puntos y ganar un Bambino gratis.`;
+        let msg = '';
+        if (isEligible) {
+            let rewardText = '';
+            if (pts >= LOYALTY_RULES.POINTS_FOR_FREE_GRANDE) {
+                const qty = Math.floor(pts / LOYALTY_RULES.POINTS_FOR_FREE_GRANDE);
+                rewardText = `${qty} Grande${qty > 1 ? 's' : ''}`;
+            } else if (pts >= LOYALTY_RULES.POINTS_FOR_FREE_MEDIANO) {
+                const qty = Math.floor(pts / LOYALTY_RULES.POINTS_FOR_FREE_MEDIANO);
+                rewardText = `${qty} Mediano${qty > 1 ? 's' : ''}`;
+            } else {
+                const qty = Math.floor(pts / LOYALTY_RULES.POINTS_FOR_FREE_BAMBINO);
+                rewardText = `${qty} Bambino${qty > 1 ? 's' : ''}`;
+            }
+            msg = `¡Hola ${customer.fullName}! Tienes ${pts} puntos de lealtad en Tiramisú, ¡suficientes para redimir ${rewardText} gratis en tu próxima visita!`;
+        } else {
+            msg = `¡Hola ${customer.fullName}! Tienes ${pts} puntos de lealtad acumulados en Tiramisú. Haz un pedido pronto para llegar a los 6 puntos y ganar premios gratis.`;
+        }
 
         const url = `https://wa.me/52${phoneStr}?text=${encodeURIComponent(msg)}`;
         window.open(url, '_blank');
@@ -96,9 +111,9 @@ export const LoyaltyDashboardPage = () => {
             render: (pts: number) => {
                 const points = pts || 0;
                 return (
-                    <Tag color={points >= 6 ? 'gold' : 'blue'} style={{ fontSize: 14, padding: '4px 8px' }}>
+                    <Tag color={points >= LOYALTY_RULES.POINTS_FOR_FREE_BAMBINO ? 'gold' : 'blue'} style={{ fontSize: 14, padding: '4px 8px' }}>
                         {points} pts
-                        {points >= 6 && <TrophyOutlined style={{ marginLeft: 8 }} />}
+                        {points >= LOYALTY_RULES.POINTS_FOR_FREE_BAMBINO && <TrophyOutlined style={{ marginLeft: 8 }} />}
                     </Tag>
                 );
             }
@@ -108,7 +123,7 @@ export const LoyaltyDashboardPage = () => {
             key: 'actions',
             render: (_: unknown, record: Customer) => (
                 <Button
-                    type={record.loyaltyPoints && record.loyaltyPoints >= 6 ? 'primary' : 'default'}
+                    type={record.loyaltyPoints && record.loyaltyPoints >= LOYALTY_RULES.POINTS_FOR_FREE_BAMBINO ? 'primary' : 'default'}
                     icon={<WhatsAppOutlined />}
                     onClick={() => handleSendWhatsApp(record)}
                 >

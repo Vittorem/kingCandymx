@@ -10,7 +10,7 @@ import { OrderList } from './OrderList';
 import { getOrderDate } from '../../utils/dateHelpers';
 import dayjs from 'dayjs';
 import { increment } from 'firebase/firestore';
-import { calculateProductPoints } from '../../utils/loyalty';
+import { calculateProductPoints, LOYALTY_RULES } from '../../utils/loyalty';
 
 
 export const OrdersPage = () => {
@@ -67,16 +67,28 @@ export const OrdersPage = () => {
 
                         const currentCustomer = customers.find(c => c.id === order.customerId);
                         const newPoints = (currentCustomer?.loyaltyPoints || 0) + pointsChange;
-                        if (newPoints >= 6) {
+                        if (newPoints >= LOYALTY_RULES.POINTS_FOR_FREE_BAMBINO) {
+                            let rewardText = '';
+                            if (newPoints >= LOYALTY_RULES.POINTS_FOR_FREE_GRANDE) {
+                                const qty = Math.floor(newPoints / LOYALTY_RULES.POINTS_FOR_FREE_GRANDE);
+                                rewardText = `${qty} Grande${qty > 1 ? 's' : ''}`;
+                            } else if (newPoints >= LOYALTY_RULES.POINTS_FOR_FREE_MEDIANO) {
+                                const qty = Math.floor(newPoints / LOYALTY_RULES.POINTS_FOR_FREE_MEDIANO);
+                                rewardText = `${qty} Mediano${qty > 1 ? 's' : ''}`;
+                            } else {
+                                const qty = Math.floor(newPoints / LOYALTY_RULES.POINTS_FOR_FREE_BAMBINO);
+                                rewardText = `${qty} Bambino${qty > 1 ? 's' : ''}`;
+                            }
+
                             Modal.confirm({
                                 title: '¡Promoción de Lealtad!',
-                                content: `El cliente ${currentCustomer?.fullName || ''} ahora tiene ${newPoints} puntos, suficientes para un Bambino gratis. ¿Enviar aviso por WhatsApp?`,
+                                content: `El cliente ${currentCustomer?.fullName || ''} ahora tiene ${newPoints} puntos, suficientes para ${rewardText} gratis. ¿Enviar aviso por WhatsApp?`,
                                 okText: 'Enviar WhatsApp',
                                 cancelText: 'Cancelar',
                                 onOk: () => {
                                     if (currentCustomer?.phone) {
-                                        const phoneStr = currentCustomer.phone.replace(/\\D/g, '');
-                                        const msg = `¡Hola! Gracias por tu compra en Tiramisú. Ya cuentas con ${newPoints} puntos de lealtad, ¡suficientes para redimir un Bambino gratis en tu próxima visita!`;
+                                        const phoneStr = currentCustomer.phone.replace(/\D/g, '');
+                                        const msg = `¡Hola! Gracias por tu compra en Tiramisú. Ya cuentas con ${newPoints} puntos de lealtad, ¡suficientes para redimir ${rewardText} gratis en tu próxima visita!`;
                                         const url = `https://wa.me/52${phoneStr}?text=${encodeURIComponent(msg)}`;
                                         window.open(url, '_blank');
                                     } else {
