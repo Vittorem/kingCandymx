@@ -3,6 +3,8 @@ export const LOYALTY_RULES = {
     POINTS_PER_MEDIANO: 5,
     POINTS_PER_GRANDE: 8,
     POINTS_FOR_FREE_BAMBINO: 6,
+    POINTS_FOR_FREE_MEDIANO: 50,
+    POINTS_FOR_FREE_GRANDE: 65,
 };
 
 export const calculateProductPoints = (productName: string, quantity: number = 1): number => {
@@ -21,10 +23,20 @@ export const calculateProductPoints = (productName: string, quantity: number = 1
     return 0; // Other products do not yield points
 };
 
-export const calculateMaxRedeemableBambinos = (loyaltyPoints: number = 0): number => {
-    return Math.floor(loyaltyPoints / LOYALTY_RULES.POINTS_FOR_FREE_BAMBINO);
+export const getPointsCostForProduct = (productName: string): number => {
+    const nameStr = (productName || '').toLowerCase();
+    if (nameStr.includes('bambino')) return LOYALTY_RULES.POINTS_FOR_FREE_BAMBINO;
+    if (nameStr.includes('mediano')) return LOYALTY_RULES.POINTS_FOR_FREE_MEDIANO;
+    if (nameStr.includes('grande')) return LOYALTY_RULES.POINTS_FOR_FREE_GRANDE;
+    return 0;
 };
 
-export const calculatePointsCost = (bambinosRedeemed: number): number => {
-    return bambinosRedeemed * LOYALTY_RULES.POINTS_FOR_FREE_BAMBINO;
+export const calculateMaxRedeemableProducts = (productName: string, loyaltyPoints: number = 0): number => {
+    const cost = getPointsCostForProduct(productName);
+    if (cost === 0) return 0;
+    return Math.floor(loyaltyPoints / cost);
+};
+
+export const calculatePointsCost = (productName: string, quantityRedeemed: number): number => {
+    return quantityRedeemed * getPointsCostForProduct(productName);
 };

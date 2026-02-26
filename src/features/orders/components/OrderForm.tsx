@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Drawer, Form, Select, DatePicker, InputNumber, Radio, Divider, Input, Button, Space, Typography, Row, Col, Switch, Alert } from 'antd';
 import { useFirestoreSubscription } from '../../../hooks/useFirestore';
 import { Customer, Product, Flavor, Channel, Order, ORDER_STATUSES } from '../../../types';
-import { calculateMaxRedeemableBambinos, calculatePointsCost, LOYALTY_RULES } from '../../../utils/loyalty';
+import { calculateMaxRedeemableProducts, calculatePointsCost, getPointsCostForProduct } from '../../../utils/loyalty';
 import dayjs from 'dayjs';
 
 interface OrderFormProps {
@@ -32,9 +32,10 @@ export const OrderForm = ({ open, onClose, onSubmit, initialValues, loading }: O
 
     const currentCustomer = customers.find(c => c.id === form.getFieldValue('customerId'));
     const currentProduct = products.find(p => p.id === form.getFieldValue('productId'));
-    const isBambino = (currentProduct?.name || '').toLowerCase().includes('bambino');
+    const productName = currentProduct?.name || '';
+    const pointsCost = getPointsCostForProduct(productName);
     const availablePoints = currentCustomer?.loyaltyPoints || 0;
-    const canRedeem = isBambino && availablePoints >= LOYALTY_RULES.POINTS_FOR_FREE_BAMBINO;
+    const canRedeem = pointsCost > 0 && availablePoints >= pointsCost;
 
     useEffect(() => {
         if (open) {
@@ -55,7 +56,7 @@ export const OrderForm = ({ open, onClose, onSubmit, initialValues, loading }: O
                     deliveryMethod: 'Recoge',
                     discountType: 'AMOUNT',
                     deliveryDate: dayjs(),
-                    redeemBambino: false
+                    redeemLoyalty: false
                 });
             }
         }
@@ -85,10 +86,13 @@ export const OrderForm = ({ open, onClose, onSubmit, initialValues, loading }: O
             ? (subtotal * discountVal) / 100
             : discountVal;
 
-        const redeemBambino = values.redeemBambino as boolean;
+        const redeemLoyalty = values.redeemLoyalty as boolean;
         let pLoyaltyDiscount = 0;
-        if (redeemBambino && isBambino) {
-            const maxFree = calculateMaxRedeemableBambinos(availablePoints);
+        const currentSelectedProduct = products.find(p => p.id === values.productId);
+        const pName = currentSelectedProduct?.name || '';
+
+        if (redeemLoyalty && getPointsCostForProduct(pName) > 0) {
+            const maxFree = calculateMaxRedeemableProducts(pName, availablePoints);
             const freeUnits = Math.min(qty, maxFree);
             pLoyaltyDiscount = freeUnits * price;
         }
@@ -113,15 +117,15 @@ export const OrderForm = ({ open, onClose, onSubmit, initialValues, loading }: O
                 customerName: customer?.fullName || 'Desconocido',
                 flavorNameAtSale: flavor?.name || 'Desconocido',
                 deliveryDate: values.deliveryDate.toDate(),
-                pointsRedeemed: values.redeemBambino && loyaltyDiscount > 0
-                    ? calculatePointsCost(loyaltyDiscount / (values.unitPriceAtSale || 1))
+                pointsRedeemed: values.redeemLoyalty && loyaltyDiscount > 0
+                    ? calculatePointsCost(values.productNameAtSale as string || '', Math.round(loyaltyDiscount / (values.unitPriceAtSale || 1)))
                     : 0,
                 subtotal: totals.subtotal,
                 discountAmount: totals.discount,
                 total: totals.total,
             };
 
-            delete (payload as Record<string, unknown>).redeemBambino;
+            delete (payload as Record<string, unknown>).redeemLoyalty;
 
             await onSubmit(payload);
             onClose();
@@ -172,13 +176,15 @@ export const OrderForm = ({ open, onClose, onSubmit, initialValues, loading }: O
                             type="info"
                             showIcon
                             action={
-                                canRedeem ? (
-                                    <Form.Item name="redeemBambino" valuePropName="checked" style={{ margin: 0 }}>
+                                pointsCost === 0 ? (
+                                    <Text type="secondary" style={{ fontSize: 12 }}>No aplica para este producto</Text>
+                                ) : canRedeem ? (
+                                    <Form.Item name="redeemLoyalty" valuePropName="checked" style={{ margin: 0 }}>
                                         <Switch checkedChildren="Redimir" unCheckedChildren="No usar" />
                                     </Form.Item>
                                 ) : (
                                     <Text type="secondary" style={{ fontSize: 12 }}>
-                                        Requiere 6 pts y pedir Bambino
+                                        Requiere {pointsCost} pts para este producto
                                     </Text>
                                 )
                             }
