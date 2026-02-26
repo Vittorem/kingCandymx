@@ -17,7 +17,7 @@ export const SettingsPage = () => {
                             title: 'Precio',
                             dataIndex: 'price',
                             key: 'price',
-                            render: (val: number) => `$${val}`
+                            render: (val: number) => `$${val}`,
                         },
                     ]}
                     renderFormFields={() => (
@@ -40,9 +40,7 @@ export const SettingsPage = () => {
                 <CatalogTable<Flavor>
                     title="Sabores"
                     collectionName="catalog_flavors"
-                    columns={[
-                        { title: 'Nombre', dataIndex: 'name', key: 'name' },
-                    ]}
+                    columns={[{ title: 'Nombre', dataIndex: 'name', key: 'name' }]}
                     renderFormFields={() => (
                         <Form.Item name="name" label="Nombre" rules={[{ required: true }]}>
                             <Input />
@@ -58,9 +56,7 @@ export const SettingsPage = () => {
                 <CatalogTable<Channel>
                     title="Canales"
                     collectionName="catalog_channels"
-                    columns={[
-                        { title: 'Nombre', dataIndex: 'name', key: 'name' },
-                    ]}
+                    columns={[{ title: 'Nombre', dataIndex: 'name', key: 'name' }]}
                     renderFormFields={() => (
                         <Form.Item name="name" label="Nombre" rules={[{ required: true }]}>
                             <Input />
@@ -78,7 +74,3 @@ export const SettingsPage = () => {
         </div>
     );
 };
-
-export default SettingsPage; // Default export for lazy loading if needed, but App.tsx imports named usually if direct, but I used named in App.tsx placeholder.
-// Checking App.tsx imports...
-// App.tsx: import { Settings } -> Actually I made inline consts in App.tsx. I should refactor App.tsx to use this file. 

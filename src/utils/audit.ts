@@ -1,7 +1,6 @@
 import { serverTimestamp } from 'firebase/firestore';
-import { BaseEntity } from '../types';
 
-export const createAuditFields = (uid: string, device: string = 'unknown'): Partial<BaseEntity> => ({
+export const createAuditFields = (uid: string) => ({
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
     createdBy: uid,
@@ -9,20 +8,14 @@ export const createAuditFields = (uid: string, device: string = 'unknown'): Part
     isDeleted: false,
 });
 
-export const updateAuditFields = (uid: string, device: string = 'unknown'): Partial<BaseEntity> => ({
+export const updateAuditFields = (uid: string) => ({
     updatedAt: serverTimestamp(),
     updatedBy: uid,
 });
 
-export const softDeleteFields = (uid: string): Partial<BaseEntity> => ({
+export const softDeleteFields = (uid: string) => ({
     isDeleted: true,
     deletedAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
     updatedBy: uid,
 });
-
-export const getDeviceType = (): string => {
-    const ua = navigator.userAgent;
-    if (/mobile/i.test(ua)) return 'mobile';
-    return 'desktop';
-};

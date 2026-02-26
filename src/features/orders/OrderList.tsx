@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { Table, Tag, Space, Button, Input, DatePicker, Select } from 'antd';
+import { Table, Tag, Space, Button, Input, Select } from 'antd';
 import { EditOutlined, DeleteOutlined } from '@ant-design/icons';
-import { Order, OrderStatus } from '../../types';
-import dayjs from 'dayjs';
+import { Order, OrderStatus, ORDER_STATUSES } from '../../types';
+import { toDay } from '../../utils/dateHelpers';
 
 interface OrderListProps {
     orders: Order[];
@@ -10,14 +10,11 @@ interface OrderListProps {
     onDelete: (id: string) => void;
 }
 
-const { RangePicker } = DatePicker;
-
 export const OrderList = ({ orders, onEdit, onDelete }: OrderListProps) => {
     const [searchText, setSearchText] = useState('');
     const [statusFilter, setStatusFilter] = useState<OrderStatus | null>(null);
 
     const filteredData = orders
-        .filter(o => !o.isDeleted)
         .filter(o => {
             const matchesSearch =
                 (o.customerName || '').toLowerCase().includes(searchText.toLowerCase()) ||
@@ -25,7 +22,11 @@ export const OrderList = ({ orders, onEdit, onDelete }: OrderListProps) => {
             const matchesStatus = statusFilter ? o.status === statusFilter : true;
             return matchesSearch && matchesStatus;
         })
-        .sort((a, b) => b.deliveryDate?.seconds - a.deliveryDate?.seconds); // Newest first
+        .sort((a, b) => {
+            const aDate = toDay(a.deliveryDate);
+            const bDate = toDay(b.deliveryDate);
+            return (bDate?.valueOf() ?? 0) - (aDate?.valueOf() ?? 0);
+        });
 
     const columns = [
         {
@@ -36,36 +37,39 @@ export const OrderList = ({ orders, onEdit, onDelete }: OrderListProps) => {
         {
             title: 'Producto',
             key: 'product',
-            render: (_: any, r: Order) => `${r.productNameAtSale} (${r.flavorNameAtSale}) x${r.quantity}`
+            render: (_: unknown, r: Order) => `${r.productNameAtSale} (${r.flavorNameAtSale}) x${r.quantity}`,
         },
         {
             title: 'Total',
             dataIndex: 'total',
             key: 'total',
-            render: (val: number) => `$${val.toFixed(2)}`
+            render: (val: number) => `$${val.toFixed(2)}`,
         },
         {
             title: 'Entrega',
             dataIndex: 'deliveryDate',
             key: 'deliveryDate',
-            render: (date: any) => date?.seconds ? dayjs(date.seconds * 1000).format('DD/MM/YYYY HH:mm') : '-'
+            render: (date: Order['deliveryDate']) => {
+                const d = toDay(date);
+                return d ? d.format('DD/MM/YYYY HH:mm') : '-';
+            },
         },
         {
             title: 'Estado',
             dataIndex: 'status',
             key: 'status',
-            render: (status: string) => <Tag color={status === 'Entregado' ? 'green' : 'blue'}>{status}</Tag>
+            render: (status: string) => <Tag color={status === 'Entregado' ? 'green' : 'blue'}>{status}</Tag>,
         },
         {
             title: 'Acciones',
             key: 'actions',
-            render: (_: any, record: Order) => (
+            render: (_: unknown, record: Order) => (
                 <Space>
                     <Button icon={<EditOutlined />} size="small" onClick={() => onEdit(record)} />
                     <Button icon={<DeleteOutlined />} size="small" danger onClick={() => onDelete(record.id)} />
                 </Space>
-            )
-        }
+            ),
+        },
     ];
 
     return (
@@ -78,12 +82,9 @@ export const OrderList = ({ orders, onEdit, onDelete }: OrderListProps) => {
                     style={{ width: 150 }}
                     onChange={setStatusFilter}
                 >
-                    <Select.Option value="Pendiente">Pendiente</Select.Option>
-                    <Select.Option value="Confirmado">Confirmado</Select.Option>
-                    <Select.Option value="En preparación">En preparación</Select.Option>
-                    <Select.Option value="Listo para entregar">Listo</Select.Option>
-                    <Select.Option value="Entregado">Entregado</Select.Option>
-                    <Select.Option value="Cancelado">Cancelado</Select.Option>
+                    {ORDER_STATUSES.map(s => (
+                        <Select.Option key={s} value={s}>{s}</Select.Option>
+                    ))}
                 </Select>
             </Space>
             <Table

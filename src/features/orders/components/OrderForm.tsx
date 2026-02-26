@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
-import { Drawer, Form, Select, DatePicker, InputNumber, Radio, Divider, Input, Button, Space, Typography, Row, Col } from 'antd';
+import { Drawer, Form, Select, DatePicker, InputNumber, Radio, Divider, Input, Button, Space, Typography, Row, Col, Switch, Alert } from 'antd';
 import { useFirestoreSubscription } from '../../../hooks/useFirestore';
-import { Customer, Product, Flavor, Channel, Order } from '../../../types';
+import { Customer, Product, Flavor, Channel, Order, ORDER_STATUSES } from '../../../types';
+import { calculateMaxRedeemableBambinos, calculatePointsCost, LOYALTY_RULES } from '../../../utils/loyalty';
 import dayjs from 'dayjs';
 
 interface OrderFormProps {
@@ -27,20 +28,24 @@ export const OrderForm = ({ open, onClose, onSubmit, initialValues, loading }: O
 
     // Local state for calculations
     const [totals, setTotals] = useState({ subtotal: 0, discount: 0, total: 0 });
+    const [loyaltyDiscount, setLoyaltyDiscount] = useState(0);
+
+    const currentCustomer = customers.find(c => c.id === form.getFieldValue('customerId'));
+    const currentProduct = products.find(p => p.id === form.getFieldValue('productId'));
+    const isBambino = (currentProduct?.name || '').toLowerCase().includes('bambino');
+    const availablePoints = currentCustomer?.loyaltyPoints || 0;
+    const canRedeem = isBambino && availablePoints >= LOYALTY_RULES.POINTS_FOR_FREE_BAMBINO;
 
     useEffect(() => {
         if (open) {
             form.resetFields();
             if (initialValues) {
-                // Hydrate form, converting timestamp to dayjs for DatePicker
-                const deliveryDate = initialValues.deliveryDate ? dayjs(initialValues.deliveryDate.toDate()) : null;
-                form.setFieldsValue({
-                    ...initialValues,
-                    deliveryDate,
-                });
-                calculateTotals(initialValues);
+                const deliveryDate = initialValues.deliveryDate
+                    ? dayjs(initialValues.deliveryDate.toDate())
+                    : null;
+                form.setFieldsValue({ ...initialValues, deliveryDate });
+                calculateTotals(initialValues as unknown as Record<string, unknown>);
             } else {
-                // Defaults
                 form.setFieldsValue({
                     status: 'Pendiente',
                     quantity: 1,
@@ -50,6 +55,7 @@ export const OrderForm = ({ open, onClose, onSubmit, initialValues, loading }: O
                     deliveryMethod: 'Recoge',
                     discountType: 'AMOUNT',
                     deliveryDate: dayjs(),
+                    redeemBambino: false
                 });
             }
         }
@@ -60,42 +66,45 @@ export const OrderForm = ({ open, onClose, onSubmit, initialValues, loading }: O
         if (product) {
             form.setFieldsValue({
                 productNameAtSale: product.name,
-                unitPriceAtSale: product.price
+                unitPriceAtSale: product.price,
             });
             calculateTotals(form.getFieldsValue());
         }
     };
 
-    const calculateTotals = (values: any) => {
-        const qty = values.quantity || 0;
-        const price = values.unitPriceAtSale || 0;
-        const shipping = values.shippingCost || 0;
-        const extra = values.extraCharges || 0;
-        const discountVal = values.discountValue || 0;
-        const discountType = values.discountType || 'AMOUNT';
+    const calculateTotals = (values: Record<string, unknown>) => {
+        const qty = (values.quantity as number) || 0;
+        const price = (values.unitPriceAtSale as number) || 0;
+        const shipping = (values.shippingCost as number) || 0;
+        const extra = (values.extraCharges as number) || 0;
+        const discountVal = (values.discountValue as number) || 0;
+        const discountType = (values.discountType as string) || 'AMOUNT';
 
         const subtotal = qty * price;
-        let discountAmount = 0;
+        const discountAmount = discountType === 'PERCENT'
+            ? (subtotal * discountVal) / 100
+            : discountVal;
 
-        if (discountType === 'PERCENT') {
-            discountAmount = (subtotal * discountVal) / 100;
-        } else {
-            discountAmount = discountVal;
+        const redeemBambino = values.redeemBambino as boolean;
+        let pLoyaltyDiscount = 0;
+        if (redeemBambino && isBambino) {
+            const maxFree = calculateMaxRedeemableBambinos(availablePoints);
+            const freeUnits = Math.min(qty, maxFree);
+            pLoyaltyDiscount = freeUnits * price;
         }
 
-        const total = subtotal + shipping + extra - discountAmount;
-
+        const total = subtotal + shipping + extra - discountAmount - pLoyaltyDiscount;
+        setLoyaltyDiscount(pLoyaltyDiscount);
         setTotals({ subtotal, discount: discountAmount, total });
     };
 
-    const onValuesChange = (_: any, allValues: any) => {
+    const onValuesChange = (_: unknown, allValues: Record<string, unknown>) => {
         calculateTotals(allValues);
     };
 
     const handleFinish = async () => {
         try {
             const values = await form.validateFields();
-
             const customer = customers.find(c => c.id === values.customerId);
             const flavor = flavors.find(f => f.id === values.flavorId);
 
@@ -104,10 +113,15 @@ export const OrderForm = ({ open, onClose, onSubmit, initialValues, loading }: O
                 customerName: customer?.fullName || 'Desconocido',
                 flavorNameAtSale: flavor?.name || 'Desconocido',
                 deliveryDate: values.deliveryDate.toDate(),
+                pointsRedeemed: values.redeemBambino && loyaltyDiscount > 0
+                    ? calculatePointsCost(loyaltyDiscount / (values.unitPriceAtSale || 1))
+                    : 0,
                 subtotal: totals.subtotal,
                 discountAmount: totals.discount,
                 total: totals.total,
             };
+
+            delete (payload as Record<string, unknown>).redeemBambino;
 
             await onSubmit(payload);
             onClose();
@@ -118,18 +132,23 @@ export const OrderForm = ({ open, onClose, onSubmit, initialValues, loading }: O
 
     return (
         <Drawer
-            title={initialValues ? "Editar Pedido" : "Nuevo Pedido"}
+            title={initialValues ? 'Editar Pedido' : 'Nuevo Pedido'}
             width={720}
             onClose={onClose}
             open={open}
-            extra={<Space><Button onClick={onClose}>Cancelar</Button><Button type="primary" onClick={handleFinish} loading={loading}>Guardar</Button></Space>}
+            extra={
+                <Space>
+                    <Button onClick={onClose}>Cancelar</Button>
+                    <Button type="primary" onClick={handleFinish} loading={loading}>Guardar</Button>
+                </Space>
+            }
         >
-            <Form form={form} layout="vertical" onValuesChange={onValuesChange} hideRequiredMark>
+            <Form form={form} layout="vertical" onValuesChange={onValuesChange} requiredMark={false}>
                 <Row gutter={16}>
                     <Col span={12}>
                         <Form.Item name="customerId" label="Cliente" rules={[{ required: true }]}>
                             <Select showSearch optionFilterProp="children" placeholder="Selecciona Cliente">
-                                {customers.filter(c => !c.isDeleted).map(c => (
+                                {customers.filter(c => c.isActive !== false).map(c => (
                                     <Option key={c.id} value={c.id}>{c.fullName} - {c.phone}</Option>
                                 ))}
                             </Select>
@@ -138,7 +157,7 @@ export const OrderForm = ({ open, onClose, onSubmit, initialValues, loading }: O
                     <Col span={12}>
                         <Form.Item name="channelId" label="Canal de Venta" rules={[{ required: true }]}>
                             <Select placeholder="Selecciona Canal">
-                                {channels.filter(c => !c.isDeleted).map(c => (
+                                {channels.filter(c => c.isActive).map(c => (
                                     <Option key={c.id} value={c.id}>{c.name}</Option>
                                 ))}
                             </Select>
@@ -146,24 +165,44 @@ export const OrderForm = ({ open, onClose, onSubmit, initialValues, loading }: O
                     </Col>
                 </Row>
 
+                {currentCustomer && availablePoints > 0 && (
+                    <div style={{ marginBottom: 16 }}>
+                        <Alert
+                            message={`Este cliente tiene ${availablePoints} puntos de lealtad.`}
+                            type="info"
+                            showIcon
+                            action={
+                                canRedeem ? (
+                                    <Form.Item name="redeemBambino" valuePropName="checked" style={{ margin: 0 }}>
+                                        <Switch checkedChildren="Redimir" unCheckedChildren="No usar" />
+                                    </Form.Item>
+                                ) : (
+                                    <Text type="secondary" style={{ fontSize: 12 }}>
+                                        Requiere 6 pts y pedir Bambino
+                                    </Text>
+                                )
+                            }
+                        />
+                    </div>
+                )}
+
                 <Divider orientation="left">Producto</Divider>
 
                 <Row gutter={16}>
                     <Col span={8}>
                         <Form.Item name="productId" label="Producto" rules={[{ required: true }]}>
                             <Select onChange={handleProductChange} placeholder="Producto">
-                                {products.filter(p => !p.isDeleted).map(p => (
+                                {products.filter(p => p.isActive).map(p => (
                                     <Option key={p.id} value={p.id}>{p.name} (${p.price})</Option>
                                 ))}
                             </Select>
                         </Form.Item>
-                        {/* Hidden fields to freeze values */}
                         <Form.Item name="productNameAtSale" hidden><Input /></Form.Item>
                     </Col>
                     <Col span={8}>
                         <Form.Item name="flavorId" label="Sabor" rules={[{ required: true }]}>
                             <Select placeholder="Sabor">
-                                {flavors.filter(f => !f.isDeleted).map(f => (
+                                {flavors.filter(f => f.isActive).map(f => (
                                     <Option key={f.id} value={f.id}>{f.name}</Option>
                                 ))}
                             </Select>
@@ -230,6 +269,7 @@ export const OrderForm = ({ open, onClose, onSubmit, initialValues, loading }: O
                     <Col span={8}>
                         <div style={{ padding: '30px 0', color: 'red' }}>
                             Descuento: -${totals.discount.toFixed(2)}
+                            {loyaltyDiscount > 0 && <span style={{ display: 'block' }}>Lealtad: -${loyaltyDiscount.toFixed(2)}</span>}
                         </div>
                     </Col>
                 </Row>
@@ -255,12 +295,9 @@ export const OrderForm = ({ open, onClose, onSubmit, initialValues, loading }: O
 
                 <Form.Item name="status" label="Estado Inicial">
                     <Select>
-                        <Option value="Pendiente">Pendiente</Option>
-                        <Option value="Confirmado">Confirmado</Option>
-                        <Option value="En preparación">En preparación</Option>
-                        <Option value="Listo para entregar">Listo para entregar</Option>
-                        <Option value="Entregado">Entregado</Option>
-                        <Option value="Cancelado">Cancelado</Option>
+                        {ORDER_STATUSES.map(s => (
+                            <Option key={s} value={s}>{s}</Option>
+                        ))}
                     </Select>
                 </Form.Item>
 

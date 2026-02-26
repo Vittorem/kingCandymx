@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import {
     collection,
     query,
@@ -8,79 +8,92 @@ import {
     addDoc,
     doc,
     updateDoc,
-    deleteDoc // We'll implement soft delete mainly, but good to have
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useAuth } from '../components/auth/AuthGate';
-import { createAuditFields, updateAuditFields, softDeleteFields, getDeviceType } from '../utils/audit';
+import { createAuditFields, updateAuditFields, softDeleteFields } from '../utils/audit';
+import { BaseEntity } from '../types';
 
-export function useFirestoreSubscription<T>(collectionName: string, constraints: QueryConstraint[] = []) {
+/**
+ * Real-time Firestore subscription hook.
+ * Automatically scoped to the authenticated user's sub-collection.
+ * Filters out soft-deleted documents by default (pass `includeDeleted: true` to override).
+ */
+export function useFirestoreSubscription<T extends BaseEntity>(
+    collectionName: string,
+    constraints: QueryConstraint[] = [],
+    options?: { includeDeleted?: boolean }
+) {
     const { user } = useAuth();
     const [data, setData] = useState<T[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<Error | null>(null);
 
+    // Memoize constraints to avoid re-subscribing on every render
+    const stableConstraints = useMemo(() => constraints, [JSON.stringify(constraints.map(String))]);
+
     useEffect(() => {
         if (!user) return;
 
-        // Always enforce user isolation + non-deleted by default
-        // Note: If you want to see deleted, you'd need to override or pass a flag.
-        // For this basic hook, we append user check.
         const userRef = collection(db, `users/${user.uid}/${collectionName}`);
 
-        // Combine default constraints with passed ones
-        // We shouldn't filter isDeleted here if we want to toggle it, but let's default to hiding deleted
-        // To keep it simple, we'll assume the caller passes the right constraints or we append standard ones.
-        const finalConstraints = [
-            ...constraints
-            // where('isDeleted', '==', false) // Let's leave this to the caller for flexibility or specific hooks
-        ];
+        // Build query constraints
+        const finalConstraints: QueryConstraint[] = [...stableConstraints];
+        if (!options?.includeDeleted) {
+            finalConstraints.push(where('isDeleted', '==', false));
+        }
 
         const q = query(userRef, ...finalConstraints);
 
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-            const items = snapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            })) as T[];
-            setData(items);
-            setLoading(false);
-        }, (err) => {
-            console.error("Firestore subscription error:", err);
-            setError(err);
-            setLoading(false);
-        });
+        const unsubscribe = onSnapshot(
+            q,
+            (snapshot) => {
+                const items = snapshot.docs.map(d => ({
+                    id: d.id,
+                    ...d.data(),
+                })) as T[];
+                setData(items);
+                setLoading(false);
+            },
+            (err) => {
+                console.error('Firestore subscription error:', err);
+                setError(err);
+                setLoading(false);
+            }
+        );
 
         return () => unsubscribe();
-    }, [user, collectionName, JSON.stringify(constraints)]); // JSON.stringify to avoid infinite loop on array ref
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [user, collectionName, stableConstraints, options?.includeDeleted]);
 
     return { data, loading, error };
 }
 
-export function useFirestoreMutation(collectionName: string) {
+/**
+ * Firestore mutation helpers scoped to the authenticated user.
+ */
+export function useFirestoreMutation<T extends BaseEntity>(collectionName: string) {
     const { user } = useAuth();
 
-    const add = async (data: any) => {
-        if (!user) throw new Error("No user");
-        const device = getDeviceType();
+    const add = async (data: Omit<T, keyof BaseEntity>) => {
+        if (!user) throw new Error('No user');
         return addDoc(collection(db, `users/${user.uid}/${collectionName}`), {
             ...data,
-            ...createAuditFields(user.uid, device)
+            ...createAuditFields(user.uid),
         });
     };
 
-    const update = async (id: string, data: any) => {
-        if (!user) throw new Error("No user");
-        const device = getDeviceType();
+    const update = async (id: string, data: Partial<Omit<T, keyof BaseEntity>>) => {
+        if (!user) throw new Error('No user');
         const ref = doc(db, `users/${user.uid}/${collectionName}`, id);
         return updateDoc(ref, {
             ...data,
-            ...updateAuditFields(user.uid, device)
+            ...updateAuditFields(user.uid),
         });
     };
 
     const softDelete = async (id: string) => {
-        if (!user) throw new Error("No user");
+        if (!user) throw new Error('No user');
         const ref = doc(db, `users/${user.uid}/${collectionName}`, id);
         return updateDoc(ref, softDeleteFields(user.uid));
     };

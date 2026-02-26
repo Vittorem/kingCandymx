@@ -33,8 +33,8 @@ export const OrderSummary = ({ orders }: OrderSummaryProps) => {
     };
 
     return (
-        <div style={{ display: 'flex', gap: 16, alignItems: 'center', background: '#fff', padding: '0 16px', borderRadius: 8, border: '1px solid #d9d9d9' }}>
-            <Space split={<Divider type="vertical" />}>
+        <div style={{ display: 'flex', alignItems: 'center', background: '#fff', padding: '16px 24px', borderRadius: 8, border: '1px solid #d9d9d9', width: '100%' }}>
+            <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
                 <Statistic
                     title="Progreso"
                     value={stats.readyCount}
@@ -42,18 +42,24 @@ export const OrderSummary = ({ orders }: OrderSummaryProps) => {
                     valueStyle={{ fontSize: 16, color: '#3f8600' }}
                     prefix={<CheckCircleOutlined />}
                 />
+            </div>
+            <Divider type="vertical" style={{ height: 40, top: 'auto' }} />
+            <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
                 <Statistic
                     title="Por Preparar"
                     value={stats.pendingCount}
                     valueStyle={{ fontSize: 16, color: '#cf1322' }}
                     prefix={<ClockCircleOutlined />}
                 />
-                <Space direction="vertical" size={0} style={{ fontSize: 12 }}>
+            </div>
+            <Divider type="vertical" style={{ height: 40, top: 'auto' }} />
+            <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
+                <Space direction="vertical" size={0} style={{ fontSize: 12, minWidth: 150 }}>
                     <Text type="secondary">Chico: {stats.bySize.chico}</Text>
                     <Text type="secondary">Mediano: {stats.bySize.mediano}</Text>
                     <Text type="secondary">Grande: {stats.bySize.grande}</Text>
                 </Space>
-            </Space>
+            </div>
         </div>
     );
 };

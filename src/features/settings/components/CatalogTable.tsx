@@ -1,5 +1,6 @@
-import { useState } from 'react';
-import { Table, Button, Modal, Form, Input, InputNumber, Switch, Space, Popconfirm, message } from 'antd';
+import { useState, ReactNode } from 'react';
+import { Table, Button, Modal, Form, Switch, Space, Popconfirm, message } from 'antd';
+import type { ColumnsType } from 'antd/es/table';
 import { EditOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import { useFirestoreSubscription, useFirestoreMutation } from '../../../hooks/useFirestore';
 import { BaseEntity } from '../../../types';
@@ -7,15 +8,15 @@ import { BaseEntity } from '../../../types';
 interface CatalogTableProps<T> {
     title: string;
     collectionName: string;
-    columns?: any[];
-    renderFormFields: () => React.ReactNode;
+    columns?: ColumnsType<T>;
+    renderFormFields: () => ReactNode;
 }
 
 export function CatalogTable<T extends BaseEntity & { isActive: boolean }>({
     title,
     collectionName,
     columns = [],
-    renderFormFields
+    renderFormFields,
 }: CatalogTableProps<T>) {
     const { data, loading } = useFirestoreSubscription<T>(collectionName);
     const { add, update, softDelete } = useFirestoreMutation(collectionName);
@@ -40,7 +41,7 @@ export function CatalogTable<T extends BaseEntity & { isActive: boolean }>({
         try {
             await softDelete(id);
             message.success('Elemento eliminado');
-        } catch (error) {
+        } catch {
             message.error('Error al eliminar');
         }
     };
@@ -62,7 +63,7 @@ export function CatalogTable<T extends BaseEntity & { isActive: boolean }>({
         }
     };
 
-    const defaultColumns = [
+    const allColumns: ColumnsType<T> = [
         ...columns,
         {
             title: 'Estado',
@@ -72,21 +73,21 @@ export function CatalogTable<T extends BaseEntity & { isActive: boolean }>({
                 <span style={{ color: active ? 'green' : 'gray' }}>
                     {active ? 'Activo' : 'Inactivo'}
                 </span>
-            )
+            ),
         },
         {
             title: 'Acciones',
             key: 'actions',
             width: 150,
-            render: (_: any, record: T) => (
+            render: (_, record) => (
                 <Space>
                     <Button icon={<EditOutlined />} size="small" onClick={() => handleEdit(record)} />
                     <Popconfirm title="¿Eliminar?" onConfirm={() => handleDelete(record.id)}>
                         <Button icon={<DeleteOutlined />} size="small" danger />
                     </Popconfirm>
                 </Space>
-            )
-        }
+            ),
+        },
     ];
 
     return (
@@ -99,8 +100,8 @@ export function CatalogTable<T extends BaseEntity & { isActive: boolean }>({
             </div>
 
             <Table
-                dataSource={data.filter(x => !x.isDeleted)}
-                columns={defaultColumns}
+                dataSource={data}
+                columns={allColumns}
                 rowKey="id"
                 loading={loading}
                 pagination={{ pageSize: 10 }}

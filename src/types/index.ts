@@ -1,11 +1,13 @@
+import { Timestamp } from 'firebase/firestore';
+
 export interface BaseEntity {
     id: string;
-    createdAt: any; // Firestore Timestamp
-    updatedAt: any;
+    createdAt: Timestamp;
+    updatedAt: Timestamp;
     createdBy: string;
     updatedBy: string;
     isDeleted?: boolean;
-    deletedAt?: any;
+    deletedAt?: Timestamp;
 }
 
 export interface UserProfile {
@@ -56,20 +58,41 @@ export interface Customer extends BaseEntity {
 
     isActive: boolean;
 
-    // Derived metrics (not always persisted, but useful in UI)
+    // Loyalty Program
+    loyaltyPoints?: number;
+
+    // Derived metrics
     totalSpent?: number;
     ordersCount?: number;
     avgOrderValue?: number;
-    lastDeliveredAt?: any; // Timestamp
+    lastDeliveredAt?: Timestamp;
 }
 
 // --- Orders ---
 
-export type OrderStatus = 'Pendiente' | 'Confirmado' | 'En preparación' | 'Listo para entregar' | 'Entregado' | 'Cancelado';
+export const ORDER_STATUSES = [
+    'Pendiente',
+    'Confirmado',
+    'En preparación',
+    'Listo para entregar',
+    'Entregado',
+    'Cancelado',
+] as const;
+
+export type OrderStatus = (typeof ORDER_STATUSES)[number];
+
+/** Kanban-visible statuses (excludes Cancelado) */
+export const KANBAN_STATUSES: OrderStatus[] = [
+    'Pendiente',
+    'Confirmado',
+    'En preparación',
+    'Listo para entregar',
+    'Entregado',
+];
 
 export interface Order extends BaseEntity {
     customerId: string;
-    customerName?: string; // Denormalized for ease
+    customerName?: string;
     productId: string;
     productNameAtSale: string;
     flavorId: string;
@@ -79,7 +102,7 @@ export interface Order extends BaseEntity {
     quantity: number;
     unitPriceAtSale: number;
 
-    deliveryDate: any; // Timestamp
+    deliveryDate: Timestamp;
     deliveryMethod: 'Recoge' | 'Envío';
     shippingCost: number;
 
@@ -92,12 +115,17 @@ export interface Order extends BaseEntity {
     notes?: string;
     status: OrderStatus;
 
-    // Calculated fields (stored for history integrity)
+    // Loyalty Program tracking
+    pointsEarned?: number;
+    pointsRedeemed?: number;
+    pointsAwarded?: boolean;
+
+    // Calculated fields
     subtotal: number;
     discountAmount: number;
     total: number;
 
-    deliveredAt?: any; // Set when status -> Entregado
+    deliveredAt?: Timestamp;
 }
 
 // --- Inventory ---
@@ -106,9 +134,9 @@ export interface InventoryItem extends BaseEntity {
     name: string;
     category: string;
     purchaseUnitLabel: 'bolsa' | 'caja' | 'paquete' | 'cartera';
-    packageSize: number; // e.g. 500 (g/ml/units inside)
-    stockPackages: number; // Whole packages
-    minPackages: number; // Alert threshold
+    packageSize: number;
+    stockPackages: number;
+    minPackages: number;
     supplier?: string;
     notes?: string;
     isActive: boolean;
@@ -118,18 +146,26 @@ export interface InventoryMovement extends BaseEntity {
     itemId: string;
     itemName: string;
     type: 'IN' | 'OUT' | 'ADJUST';
-    quantityPackages: number; // +/-
-    date: any; // Timestamp
+    quantityPackages: number;
+    date: Timestamp;
     note?: string;
 }
 
-// --- Recipes (Simple) ---
+// --- Recipes ---
 export interface Recipe extends BaseEntity {
     productId: string;
-    yieldUnits: number; // How many tiramisus from this batch
+    yieldUnits: number;
     ingredients: {
         itemId: string;
-        qtyPackages: number; // e.g. 0.5 package or 2 packages
+        qtyPackages: number;
     }[];
+}
+
+// --- Loyalty System ---
+export interface LoyaltyLedger extends BaseEntity {
+    customerId: string;
+    orderId?: string; // Optional if reason is 'manual_adjustment'
+    pointsChange: number; // Positive (earned) or negative (redeemed)
+    reason: 'purchase' | 'redemption' | 'manual_adjustment';
 }
 

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Table, Button, Input, Space, Tag, Popconfirm, message, Card } from 'antd';
-import { PlusOutlined, SearchOutlined, EditOutlined, DeleteOutlined, UserOutlined } from '@ant-design/icons';
+import { PlusOutlined, SearchOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { useFirestoreSubscription, useFirestoreMutation } from '../../hooks/useFirestore';
 import { Customer } from '../../types';
 import { CustomerForm } from './components/CustomerForm';
@@ -27,7 +27,7 @@ export const CustomerList = () => {
         try {
             await softDelete(id);
             message.success('Cliente eliminado');
-        } catch (error) {
+        } catch {
             message.error('Error al eliminar');
         }
     };
@@ -47,24 +47,32 @@ export const CustomerList = () => {
         }
     };
 
-    const filteredData = customers
-        .filter(c => !c.isDeleted)
-        .filter(c =>
-            c.fullName.toLowerCase().includes(searchText.toLowerCase()) ||
-            c.phone.includes(searchText)
-        );
+    const filteredData = customers.filter(c =>
+        c.fullName.toLowerCase().includes(searchText.toLowerCase()) ||
+        c.phone.includes(searchText)
+    );
 
     const columns = [
         {
             title: 'Nombre',
             dataIndex: 'fullName',
             key: 'fullName',
-            render: (text: string) => <span style={{ fontWeight: 500 }}>{text}</span>
+            render: (text: string) => <span style={{ fontWeight: 500 }}>{text}</span>,
         },
         {
             title: 'Teléfono',
             dataIndex: 'phone',
             key: 'phone',
+        },
+        {
+            title: 'Puntos Lealtad',
+            dataIndex: 'loyaltyPoints',
+            key: 'loyaltyPoints',
+            render: (points: number) => (
+                <Tag color={points >= 6 ? 'gold' : 'blue'}>
+                    {points || 0} pts
+                </Tag>
+            ),
         },
         {
             title: 'Contacto',
@@ -76,32 +84,32 @@ export const CustomerList = () => {
                 if (method === 'Instagram') color = 'purple';
                 if (method === 'Facebook') color = 'blue';
                 return <Tag color={color}>{method}</Tag>;
-            }
+            },
         },
         {
             title: 'Etiquetas',
             dataIndex: 'tags',
             key: 'tags',
-            render: (tags: string[]) => (
+            render: (tags?: string[]) => (
                 <>
                     {tags?.map(tag => (
                         <Tag key={tag}>{tag}</Tag>
                     ))}
                 </>
-            )
+            ),
         },
         {
             title: 'Acciones',
             key: 'actions',
-            render: (_: any, record: Customer) => (
+            render: (_: unknown, record: Customer) => (
                 <Space>
                     <Button icon={<EditOutlined />} size="small" onClick={() => handleEdit(record)} />
                     <Popconfirm title="¿Eliminar cliente?" description="Esto es una eliminación lógica." onConfirm={() => handleDelete(record.id)}>
                         <Button icon={<DeleteOutlined />} size="small" danger />
                     </Popconfirm>
                 </Space>
-            )
-        }
+            ),
+        },
     ];
 
     return (
@@ -140,5 +148,3 @@ export const CustomerList = () => {
         </div>
     );
 };
-
-export default CustomerList;

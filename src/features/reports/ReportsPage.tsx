@@ -1,15 +1,38 @@
-import { useState } from 'react';
-import { Card, Button, DatePicker, Row, Col, message, Typography } from 'antd';
-import { FileExcelOutlined, FilePdfOutlined, FileTextOutlined, PieChartOutlined } from '@ant-design/icons';
+import { useState, useMemo } from 'react';
+import { Card, DatePicker, Space, Button, Divider, Typography, message, Empty, Row, Col, Statistic, Progress, Tag } from 'antd';
+import {
+    FileExcelOutlined,
+    FilePdfOutlined,
+    FileTextOutlined,
+    TeamOutlined,
+    DollarOutlined,
+    ShoppingCartOutlined,
+    UserOutlined,
+    ManOutlined,
+    WomanOutlined,
+    DownloadOutlined,
+    PieChartOutlined,
+} from '@ant-design/icons';
+import {
+    PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+} from 'recharts';
+import dayjs from 'dayjs';
 import { useFirestoreSubscription } from '../../hooks/useFirestore';
 import { Order, Customer } from '../../types';
-import dayjs from 'dayjs';
-import * as XLSX from 'xlsx';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
+import { getDeliveredOrdersInRange } from '../../utils/dateHelpers';
+import { computeDemographics } from '../../utils/demographicsHelpers';
+import {
+    exportOrdersExcel,
+    exportOrdersPDF,
+    exportCustomersXML,
+    exportDemographicsPDF,
+    exportDemographicsXML,
+} from '../../services/exportService';
 
 const { RangePicker } = DatePicker;
 const { Title, Text } = Typography;
+
+const COLORS = ['#6366f1', '#ec4899', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6'];
 
 export const ReportsPage = () => {
     const { data: orders } = useFirestoreSubscription<Order>('orders');
@@ -17,342 +40,325 @@ export const ReportsPage = () => {
 
     const [dateRange, setDateRange] = useState<[dayjs.Dayjs, dayjs.Dayjs]>([
         dayjs().startOf('month'),
-        dayjs().endOf('month')
+        dayjs().endOf('month'),
     ]);
 
-    const getFilteredOrders = () => {
-        return orders.filter(o => {
-            if (o.status !== 'Entregado') return false;
-            const dateToUse = o.deliveredAt ? dayjs(o.deliveredAt.toDate()) : (o.deliveryDate ? dayjs(o.deliveryDate.seconds * 1000) : null);
-            if (!dateToUse) return false;
-            return dateToUse.isAfter(dateRange[0]) && dateToUse.isBefore(dateRange[1]);
-        });
+    const filteredOrders = useMemo(
+        () => getDeliveredOrdersInRange(orders, dateRange[0], dateRange[1]),
+        [orders, dateRange]
+    );
+
+    const demographics = useMemo(
+        () => computeDemographics(customers, filteredOrders),
+        [customers, filteredOrders]
+    );
+
+    const totalSales = filteredOrders.reduce((a, o) => a + (o.total || 0), 0);
+    const avgTicket = filteredOrders.length > 0 ? totalSales / filteredOrders.length : 0;
+
+    // ─── Handlers ─────────────────────────────────────────────────────
+
+    const handleExcelExport = () => {
+        exportOrdersExcel(filteredOrders, customers);
+        message.success('Archivo Excel generado');
     };
 
-    const handleExportExcel = () => {
-        try {
-            const filtered = getFilteredOrders();
-
-            // Sheet 1: Orders
-            const ordersData = filtered.map(o => {
-                const dateToUse = o.deliveredAt ? dayjs(o.deliveredAt.toDate()) : (o.deliveryDate ? dayjs(o.deliveryDate.seconds * 1000) : null);
-                return {
-                    Fecha: dateToUse ? dateToUse.format('YYYY-MM-DD') : 'N/A',
-                    Cliente: o.customerName,
-                    Producto: o.productNameAtSale,
-                    Sabor: o.flavorNameAtSale,
-                    Cantidad: o.quantity,
-                    Total: o.total,
-                    Estado: o.status
-                }
-            });
-            const wsOrders = XLSX.utils.json_to_sheet(ordersData);
-
-            // Sheet 2: Customers
-            const clientsData = customers.map(c => ({
-                Nombre: c.fullName,
-                Telefono: c.phone,
-                Tipo: c.type,
-                GastoTotal: c.totalSpent || 0
-            }));
-            const wsClients = XLSX.utils.json_to_sheet(clientsData);
-
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, wsOrders, "Pedidos");
-            XLSX.utils.book_append_sheet(wb, wsClients, "Clientes");
-
-            XLSX.writeFile(wb, `Reporte_Tiramisu_${dayjs().format('YYYYMMDD')}.xlsx`);
-            message.success('Excel exportado');
-        } catch (e) {
-            console.error(e);
-            message.error('Error exportando Excel');
-        }
+    const handlePdfExport = () => {
+        exportOrdersPDF(filteredOrders, dateRange);
+        message.success('PDF generado');
     };
 
-    const handleExportPDF = () => {
-        try {
-            const doc = new jsPDF();
-            const filtered = filteredOrders || getFilteredOrders();
-
-            doc.text(`Reporte de Corte - ${dateRange[0].format('DD/MM/YYYY')} al ${dateRange[1].format('DD/MM/YYYY')}`, 14, 20);
-
-            // Summary
-            const totalSales = filtered.reduce((acc, curr) => acc + curr.total, 0);
-            doc.setFontSize(12);
-            doc.text(`Total Ventas: $${totalSales.toFixed(2)}`, 14, 30);
-            doc.text(`Total Pedidos: ${filtered.length}`, 14, 38);
-
-            // Table
-            const tableData = filtered.map(o => {
-                const dateToUse = o.deliveredAt ? dayjs(o.deliveredAt.toDate()) : (o.deliveryDate ? dayjs(o.deliveryDate.seconds * 1000) : null);
-                return [
-                    dateToUse ? dateToUse.format('DD/MM') : 'N/A',
-                    o.customerName,
-                    `${o.productNameAtSale} (${o.flavorNameAtSale})`,
-                    o.quantity,
-                    `$${o.total}`
-                ];
-            });
-
-            autoTable(doc, {
-                head: [['Fecha', 'Cliente', 'Producto', 'Qty', 'Total']],
-                body: tableData,
-                startY: 45,
-            });
-
-            doc.save(`Corte_${dayjs().format('YYYYMMDD')}.pdf`);
-            message.success('PDF exportado');
-        } catch (e) {
-            console.error(e);
-            message.error('Error exportando PDF');
-        }
+    const handleCustomerXML = () => {
+        exportCustomersXML(customers);
+        message.success('XML de clientes generado');
     };
 
-    const handleExportXML = () => {
-        try {
-            let xmlContent = '<?xml version="1.0" encoding="UTF-8"?>\n<clientes>\n';
-
-            customers.forEach(c => {
-                xmlContent += '  <cliente>\n';
-                xmlContent += `    <id>${c.id}</id>\n`;
-                xmlContent += `    <nombre>${c.fullName || ''}</nombre>\n`;
-                xmlContent += `    <telefono>${c.phone || ''}</telefono>\n`;
-                xmlContent += `    <tipo>${c.type || ''}</tipo>\n`;
-                xmlContent += `    <medioContacto>${c.mainContactMethod || ''}</medioContacto>\n`;
-                xmlContent += `    <email>${c.email || ''}</email>\n`;
-                xmlContent += `    <genero>${c.gender || ''}</genero>\n`;
-                xmlContent += `    <edad>${c.age || ''}</edad>\n`;
-                xmlContent += `    <estadoCivil>${c.civilStatus || ''}</estadoCivil>\n`;
-                xmlContent += `    <ocupacion>${c.occupation || ''}</ocupacion>\n`;
-                xmlContent += `    <instagram>${c.instagramHandle || ''}</instagram>\n`;
-                xmlContent += `    <facebook>${c.facebookLink || ''}</facebook>\n`;
-                xmlContent += `    <colonia>${c.colonia || ''}</colonia>\n`;
-                xmlContent += `    <ciudad>${c.city || ''}</ciudad>\n`;
-                xmlContent += `    <notas><![CDATA[${c.notes || ''}]]></notas>\n`;
-                xmlContent += `    <etiquetas>${(c.tags || []).join(', ')}</etiquetas>\n`;
-                xmlContent += `    <gastoTotal>${c.totalSpent || 0}</gastoTotal>\n`;
-                xmlContent += '  </cliente>\n';
-            });
-
-            xmlContent += '</clientes>';
-
-            const blob = new Blob([xmlContent], { type: 'application/xml' });
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = `Clientes_Tiramisu_${dayjs().format('YYYYMMDD')}.xml`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-
-            message.success('XML exportado');
-        } catch (e) {
-            console.error(e);
-            message.error('Error exportando XML');
-        }
+    const handleDemoPDF = () => {
+        exportDemographicsPDF(demographics, dateRange);
+        message.success('PDF de demografía generado');
     };
 
-    const getDemographicData = () => {
-        const filtered = getFilteredOrders();
-        const uniqueCustomerIds = new Set(filtered.map(o => o.customerId));
-        const activeCustomers = customers.filter(c => uniqueCustomerIds.has(c.id));
-
-        // Gender
-        const genderStats: Record<string, number> = { 'Femenino': 0, 'Masculino': 0, 'Otro/ND': 0 };
-        activeCustomers.forEach(c => {
-            if (c.gender === 'F') genderStats['Femenino']++;
-            else if (c.gender === 'M') genderStats['Masculino']++;
-            else genderStats['Otro/ND']++;
-        });
-
-        // Age
-        const ageBuckets: Record<string, number> = { '< 20': 0, '20-29': 0, '30-39': 0, '40-49': 0, '50+': 0, 'N/A': 0 };
-        activeCustomers.forEach(c => {
-            if (!c.age) {
-                ageBuckets['N/A']++;
-            } else {
-                if (c.age < 20) ageBuckets['< 20']++;
-                else if (c.age < 30) ageBuckets['20-29']++;
-                else if (c.age < 40) ageBuckets['30-39']++;
-                else if (c.age < 50) ageBuckets['40-49']++;
-                else ageBuckets['50+']++;
-            }
-        });
-
-        // Occupation
-        const occupationStats: Record<string, number> = {};
-        activeCustomers.forEach(c => {
-            const occ = c.occupation ? c.occupation.trim() : 'Sin Dato';
-            occupationStats[occ] = (occupationStats[occ] || 0) + 1;
-        });
-        const topOccupations = Object.keys(occupationStats)
-            .map(k => ({ name: k, value: occupationStats[k] }))
-            .sort((a, b) => b.value - a.value)
-            .slice(0, 5);
-
-        return { genderStats, ageBuckets, topOccupations, totalActive: activeCustomers.length };
+    const handleDemoXML = () => {
+        exportDemographicsXML(demographics, dateRange);
+        message.success('XML de demografía generado');
     };
 
-    const handleExportDemographicsXML = () => {
-        try {
-            const { genderStats, ageBuckets, topOccupations, totalActive } = getDemographicData();
-
-            let xml = '<?xml version="1.0" encoding="UTF-8"?>\n<demografia>\n';
-            xml += `  <periodo>${dateRange[0].format('YYYY-MM-DD')} al ${dateRange[1].format('YYYY-MM-DD')}</periodo>\n`;
-            xml += `  <clientesActivos>${totalActive}</clientesActivos>\n`;
-
-            xml += '  <genero>\n';
-            Object.entries(genderStats).forEach(([key, val]) => {
-                xml += `    <item><tipo>${key}</tipo><cantidad>${val}</cantidad></item>\n`;
-            });
-            xml += '  </genero>\n';
-
-            xml += '  <edades>\n';
-            Object.entries(ageBuckets).forEach(([key, val]) => {
-                xml += `    <item><rango>${key}</rango><cantidad>${val}</cantidad></item>\n`;
-            });
-            xml += '  </edades>\n';
-
-            xml += '  <ocupaciones>\n';
-            topOccupations.forEach(item => {
-                xml += `    <item><nombre>${item.name}</nombre><cantidad>${item.value}</cantidad></item>\n`;
-            });
-            xml += '  </ocupaciones>\n';
-
-            xml += '</demografia>';
-
-            const blob = new Blob([xml], { type: 'application/xml' });
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = `Demografia_Insights_${dayjs().format('YYYYMMDD')}.xml`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            message.success('XML Demográfico exportado');
-        } catch (e) {
-            console.error(e);
-            message.error('Error exportando XML');
-        }
+    // Compute gender percentages for visual display
+    const totalGender = demographics.genderData.reduce((a, d) => a + d.value, 0);
+    const getGenderPercent = (name: string) => {
+        const item = demographics.genderData.find(d => d.name === name);
+        return item && totalGender > 0 ? Math.round((item.value / totalGender) * 100) : 0;
     };
-
-    const handleExportDemographicsPDF = () => {
-        try {
-            const { genderStats, ageBuckets, topOccupations, totalActive } = getDemographicData();
-            const doc = new jsPDF();
-
-            doc.setFontSize(16);
-            doc.text('Reporte de Demografía (Insights)', 14, 20);
-            doc.setFontSize(10);
-            doc.text(`Periodo: ${dateRange[0].format('DD/MM/YYYY')} al ${dateRange[1].format('DD/MM/YYYY')}`, 14, 28);
-            doc.text(`Clientes que compraron en periodo: ${totalActive}`, 14, 34);
-
-            let currentY = 45;
-
-            // Gender Table
-            doc.setFontSize(12);
-            doc.text('Distribución por Género', 14, currentY);
-            autoTable(doc, {
-                startY: currentY + 5,
-                head: [['Género', 'Cantidad']],
-                body: Object.entries(genderStats).map(([k, v]) => [k, v]),
-            });
-
-            // @ts-ignore
-            currentY = doc.lastAutoTable.finalY + 15;
-
-            // Age Table
-            doc.text('Distribución por Edad', 14, currentY);
-            autoTable(doc, {
-                startY: currentY + 5,
-                head: [['Rango de Edad', 'Cantidad']],
-                body: Object.entries(ageBuckets).map(([k, v]) => [k, v]),
-            });
-
-            // @ts-ignore
-            currentY = doc.lastAutoTable.finalY + 15;
-
-            // Occupations Table
-            doc.text('Top Ocupaciones', 14, currentY);
-            autoTable(doc, {
-                startY: currentY + 5,
-                head: [['Ocupación', 'Cantidad']],
-                body: topOccupations.map(t => [t.name, t.value]),
-            });
-
-            doc.save(`Demografia_Insights_${dayjs().format('YYYYMMDD')}.pdf`);
-            message.success('PDF Demográfico exportado');
-        } catch (e) {
-            console.error(e);
-            message.error('Error exportando PDF');
-        }
-    };
-
-    const filteredOrders = getFilteredOrders();
 
     return (
         <div>
-            <Title level={2}>Reportes</Title>
+            {/* Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+                <div>
+                    <Title level={2} style={{ margin: 0 }}>📊 Reportes</Title>
+                    <Text type="secondary">Analiza rendimiento y exporta datos del periodo seleccionado</Text>
+                </div>
+                <RangePicker
+                    value={dateRange}
+                    onChange={(vals) => {
+                        if (vals?.[0] && vals?.[1]) setDateRange([vals[0], vals[1]]);
+                    }}
+                    format="DD/MM/YYYY"
+                    style={{ borderRadius: 8 }}
+                />
+            </div>
 
-            <Card style={{ marginBottom: 24 }}>
-                <Row gutter={16} align="middle">
-                    <Col>
-                        <Text strong>Rango de Fechas:</Text>
-                    </Col>
-                    <Col>
-                        <RangePicker
-                            value={dateRange}
-                            onChange={(val) => val && setDateRange([val[0]!, val[1]!])}
-                            allowClear={false}
+            {/* KPI Cards */}
+            <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+                <Col xs={24} sm={8}>
+                    <Card
+                        bordered={false}
+                        style={{
+                            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                            borderRadius: 12,
+                            color: 'white',
+                        }}
+                    >
+                        <Statistic
+                            title={<span style={{ color: 'rgba(255,255,255,0.85)' }}>Venta Total</span>}
+                            value={totalSales}
+                            precision={2}
+                            prefix={<DollarOutlined />}
+                            valueStyle={{ color: 'white', fontWeight: 700, fontSize: 28 }}
                         />
-                    </Col>
-                </Row>
-            </Card>
-
-            <Row gutter={16}>
-                <Col span={6}>
-                    <Card title="Exportar Excel" hoverable onClick={handleExportExcel} style={{ cursor: 'pointer', textAlign: 'center' }}>
-                        <FileExcelOutlined style={{ fontSize: 48, color: 'green', marginBottom: 16 }} />
-                        <div>Generar archivo .xlsx con Pedidos y Clientes</div>
-                        <Button type="primary" style={{ marginTop: 16 }}>Descargar Excel</Button>
                     </Card>
                 </Col>
-                <Col span={8}>
-                    <Card title="Exportar PDF (Corte)" hoverable onClick={handleExportPDF} style={{ cursor: 'pointer', textAlign: 'center' }}>
-                        <FilePdfOutlined style={{ fontSize: 48, color: 'red', marginBottom: 16 }} />
-                        <div>Generar corte de caja del periodo seleccionado</div>
-                        <Button type="primary" danger style={{ marginTop: 16 }}>Descargar PDF</Button>
+                <Col xs={24} sm={8}>
+                    <Card
+                        bordered={false}
+                        style={{
+                            background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+                            borderRadius: 12,
+                        }}
+                    >
+                        <Statistic
+                            title={<span style={{ color: 'rgba(255,255,255,0.85)' }}>Pedidos Entregados</span>}
+                            value={filteredOrders.length}
+                            prefix={<ShoppingCartOutlined />}
+                            valueStyle={{ color: 'white', fontWeight: 700, fontSize: 28 }}
+                        />
                     </Card>
                 </Col>
-                <Col span={8}>
-                    <Card title="Exportar Clientes XML" hoverable onClick={handleExportXML} style={{ cursor: 'pointer', textAlign: 'center' }}>
-                        <FileTextOutlined style={{ fontSize: 48, color: 'purple', marginBottom: 16 }} />
-                        <div>Base de datos completa de clientes con detalles</div>
-                        <Button type="default" style={{ marginTop: 16, borderColor: 'purple', color: 'purple' }}>Descargar XML</Button>
-                    </Card>
-                </Col>
-                <Col span={6}>
-                    <Card title="Exportar Demografía (Insights)" hoverable style={{ textAlign: 'center' }}>
-                        <PieChartOutlined style={{ fontSize: 48, color: '#1890ff', marginBottom: 16 }} />
-                        <div style={{ marginBottom: 16 }}>Reporte de Género, Edad y Ocupaciones</div>
-                        <Button onClick={handleExportDemographicsPDF} type="dashed" danger style={{ marginRight: 8 }}>PDF</Button>
-                        <Button onClick={handleExportDemographicsXML} type="dashed" style={{ borderColor: 'orange', color: 'orange' }}>XML</Button>
+                <Col xs={24} sm={8}>
+                    <Card
+                        bordered={false}
+                        style={{
+                            background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+                            borderRadius: 12,
+                        }}
+                    >
+                        <Statistic
+                            title={<span style={{ color: 'rgba(255,255,255,0.85)' }}>Ticket Promedio</span>}
+                            value={avgTicket}
+                            precision={2}
+                            prefix="$"
+                            valueStyle={{ color: 'white', fontWeight: 700, fontSize: 28 }}
+                        />
                     </Card>
                 </Col>
             </Row>
 
-            <Card title="Vista Previa (Resumen)" style={{ marginTop: 24 }}>
-                <Row gutter={16} style={{ textAlign: 'center' }}>
-                    <Col span={8}>
-                        <Title level={4}>{filteredOrders.length}</Title>
-                        <Text>Pedidos en periodo</Text>
+            {/* Export Section */}
+            <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+                <Col xs={24} lg={12}>
+                    <Card
+                        title={<><DownloadOutlined /> Exportar Ventas</>}
+                        bordered={false}
+                        style={{ borderRadius: 12, height: '100%' }}
+                        styles={{ body: { display: 'flex', flexDirection: 'column', gap: 12 } }}
+                    >
+                        <Button
+                            icon={<FileExcelOutlined />}
+                            onClick={handleExcelExport}
+                            type="primary"
+                            block
+                            size="large"
+                            style={{ background: '#10b981', borderColor: '#10b981', borderRadius: 8, height: 48 }}
+                        >
+                            Excel — Pedidos + Clientes
+                        </Button>
+                        <Button
+                            icon={<FilePdfOutlined />}
+                            onClick={handlePdfExport}
+                            block
+                            size="large"
+                            danger
+                            style={{ borderRadius: 8, height: 48 }}
+                        >
+                            PDF — Corte de Caja
+                        </Button>
+                        <Button
+                            icon={<FileTextOutlined />}
+                            onClick={handleCustomerXML}
+                            block
+                            size="large"
+                            style={{ borderRadius: 8, height: 48 }}
+                        >
+                            XML — Base de Clientes
+                        </Button>
+                    </Card>
+                </Col>
+                <Col xs={24} lg={12}>
+                    <Card
+                        title={<><TeamOutlined /> Exportar Demografía</>}
+                        bordered={false}
+                        style={{ borderRadius: 12, height: '100%' }}
+                        styles={{ body: { display: 'flex', flexDirection: 'column', gap: 12 } }}
+                    >
+                        <Button
+                            icon={<FilePdfOutlined />}
+                            onClick={handleDemoPDF}
+                            block
+                            size="large"
+                            danger
+                            style={{ borderRadius: 8, height: 48 }}
+                        >
+                            PDF — Reporte Demográfico
+                        </Button>
+                        <Button
+                            icon={<FileTextOutlined />}
+                            onClick={handleDemoXML}
+                            block
+                            size="large"
+                            style={{ borderRadius: 8, height: 48 }}
+                        >
+                            XML — Datos Demográficos
+                        </Button>
+                        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '12px 0' }}>
+                            <Space direction="vertical" align="center">
+                                <UserOutlined style={{ fontSize: 28, color: '#d9d9d9' }} />
+                                <Text type="secondary" style={{ fontSize: 12 }}>
+                                    {demographics.totalActive} cliente(s) activos en periodo
+                                </Text>
+                            </Space>
+                        </div>
+                    </Card>
+                </Col>
+            </Row>
+
+            {/* Demographics Visual Section */}
+            <Divider orientation="left"><PieChartOutlined /> Resumen Demográfico</Divider>
+
+            {demographics.totalActive > 0 ? (
+                <Row gutter={[16, 16]}>
+                    {/* Gender Pie Chart */}
+                    <Col xs={24} md={8}>
+                        <Card
+                            title="Distribución por Género"
+                            bordered={false}
+                            style={{ borderRadius: 12, textAlign: 'center' }}
+                        >
+                            <ResponsiveContainer width="100%" height={200}>
+                                <PieChart>
+                                    <Pie
+                                        data={demographics.genderData}
+                                        dataKey="value"
+                                        nameKey="name"
+                                        cx="50%"
+                                        cy="50%"
+                                        innerRadius={50}
+                                        outerRadius={80}
+                                        paddingAngle={3}
+                                    >
+                                        {demographics.genderData.map((_, i) => (
+                                            <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                                        ))}
+                                    </Pie>
+                                    <Tooltip />
+                                </PieChart>
+                            </ResponsiveContainer>
+                            <Space size="large" style={{ marginTop: 8 }}>
+                                <div>
+                                    <WomanOutlined style={{ color: '#ec4899', fontSize: 18 }} />
+                                    <div style={{ fontWeight: 600 }}>{getGenderPercent('Femenino')}%</div>
+                                    <Text type="secondary" style={{ fontSize: 11 }}>Femenino</Text>
+                                </div>
+                                <div>
+                                    <ManOutlined style={{ color: '#6366f1', fontSize: 18 }} />
+                                    <div style={{ fontWeight: 600 }}>{getGenderPercent('Masculino')}%</div>
+                                    <Text type="secondary" style={{ fontSize: 11 }}>Masculino</Text>
+                                </div>
+                                <div>
+                                    <UserOutlined style={{ color: '#f59e0b', fontSize: 18 }} />
+                                    <div style={{ fontWeight: 600 }}>{getGenderPercent('Otro/ND')}%</div>
+                                    <Text type="secondary" style={{ fontSize: 11 }}>Otro/ND</Text>
+                                </div>
+                            </Space>
+                        </Card>
                     </Col>
-                    <Col span={8}>
-                        <Title level={4}>${filteredOrders.reduce((acc, c) => acc + c.total, 0).toFixed(2)}</Title>
-                        <Text>Ventas totales</Text>
+
+                    {/* Age Bar Chart */}
+                    <Col xs={24} md={8}>
+                        <Card
+                            title="Distribución por Edad"
+                            bordered={false}
+                            style={{ borderRadius: 12 }}
+                        >
+                            <ResponsiveContainer width="100%" height={200}>
+                                <BarChart data={demographics.ageData}>
+                                    <CartesianGrid strokeDasharray="3 3" />
+                                    <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+                                    <YAxis allowDecimals={false} />
+                                    <Tooltip />
+                                    <Bar dataKey="value" radius={[6, 6, 0, 0]}>
+                                        {demographics.ageData.map((_, i) => (
+                                            <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                                        ))}
+                                    </Bar>
+                                </BarChart>
+                            </ResponsiveContainer>
+                            <div style={{ textAlign: 'center', marginTop: 8 }}>
+                                <Text type="secondary" style={{ fontSize: 12 }}>
+                                    Clientes agrupados por rango de edad
+                                </Text>
+                            </div>
+                        </Card>
+                    </Col>
+
+                    {/* Top Occupations */}
+                    <Col xs={24} md={8}>
+                        <Card
+                            title="Top Ocupaciones"
+                            bordered={false}
+                            style={{ borderRadius: 12 }}
+                        >
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 16, minHeight: 200, justifyContent: 'center' }}>
+                                {demographics.topOccupations.map((occ, i) => {
+                                    const maxVal = demographics.topOccupations[0]?.value || 1;
+                                    const percent = Math.round((occ.value / maxVal) * 100);
+                                    return (
+                                        <div key={occ.name}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                                                <Text style={{ fontSize: 13 }}>{occ.name}</Text>
+                                                <Tag color={COLORS[i % COLORS.length]} style={{ margin: 0 }}>{occ.value}</Tag>
+                                            </div>
+                                            <Progress percent={percent} showInfo={false} strokeColor={COLORS[i % COLORS.length]} size="small" />
+                                        </div>
+                                    );
+                                })}
+                                {demographics.topOccupations.length === 0 && (
+                                    <Text type="secondary" style={{ textAlign: 'center' }}>Sin datos de ocupación</Text>
+                                )}
+                            </div>
+                        </Card>
                     </Col>
                 </Row>
-            </Card>
+            ) : (
+                <Card bordered={false} style={{ borderRadius: 12, textAlign: 'center', padding: 40 }}>
+                    <Empty
+                        description={
+                            <span>
+                                Sin datos demográficos para <strong>{dateRange[0].format('DD/MM/YYYY')}</strong> — <strong>{dateRange[1].format('DD/MM/YYYY')}</strong>
+                            </span>
+                        }
+                    />
+                </Card>
+            )}
         </div>
     );
 };

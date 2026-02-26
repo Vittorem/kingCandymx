@@ -9,7 +9,7 @@ import {
     SettingOutlined,
     LogoutOutlined,
     MenuFoldOutlined,
-    MenuUnfoldOutlined
+    MenuUnfoldOutlined,
 } from '@ant-design/icons';
 import { useAuth } from '../auth/AuthGate';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
@@ -23,9 +23,9 @@ export const AppLayout = () => {
     const location = useLocation();
 
     const menuItems = [
+        { key: '/', icon: <AppstoreOutlined />, label: 'Dashboard' },
         { key: '/customers', icon: <UserOutlined />, label: 'Clientes' },
         { key: '/orders', icon: <ShoppingOutlined />, label: 'Pedidos' },
-        { key: '/', icon: <AppstoreOutlined />, label: 'Dashboard' },
         { key: '/reports', icon: <BarChartOutlined />, label: 'Reportes' },
         { key: '/inventory', icon: <InboxOutlined />, label: 'Inventario' },
         { key: '/settings', icon: <SettingOutlined />, label: 'Configuración' },
@@ -64,7 +64,6 @@ export const AppLayout = () => {
                         onClick={() => setCollapsed(!collapsed)}
                         style={{ fontSize: '16px', width: 64, height: 64 }}
                     />
-
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                         <span style={{ fontWeight: 500 }}>{user?.displayName}</span>
                         <Dropdown menu={userMenu}>
@@ -79,7 +78,7 @@ export const AppLayout = () => {
                         minHeight: 280,
                         background: '#fff',
                         borderRadius: 8,
-                        overflowY: 'auto'
+                        overflowY: 'auto',
                     }}
                 >
                     <Outlet />

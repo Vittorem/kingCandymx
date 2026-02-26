@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Drawer, Form, Input, Select, Button, InputNumber, Row, Col, Space, Divider } from 'antd';
+import { Drawer, Form, Input, Select, Button, InputNumber, Row, Col, Space, Divider, Switch } from 'antd';
 import { Customer } from '../../../types';
 
 interface CustomerFormProps {
@@ -39,11 +39,11 @@ export const CustomerForm = ({ open, onClose, onSubmit, initialValues, loading }
 
     return (
         <Drawer
-            title={initialValues ? "Editar Cliente" : "Nuevo Cliente"}
+            title={initialValues ? 'Editar Cliente' : 'Nuevo Cliente'}
             width={720}
             onClose={onClose}
             open={open}
-            bodyStyle={{ paddingBottom: 80 }}
+            styles={{ body: { paddingBottom: 80 } }}
             extra={
                 <Space>
                     <Button onClick={onClose}>Cancelar</Button>
@@ -53,34 +53,30 @@ export const CustomerForm = ({ open, onClose, onSubmit, initialValues, loading }
                 </Space>
             }
         >
-            <Form layout="vertical" form={form} hideRequiredMark>
+            <Form layout="vertical" form={form} requiredMark={false}>
+                <Form.Item name="isActive" valuePropName="checked" hidden>
+                    <Switch />
+                </Form.Item>
                 <Row gutter={16}>
                     <Col span={12}>
-                        <Form.Item
-                            name="fullName"
-                            label="Nombre Completo"
-                            rules={[{ required: true, message: 'Ingresa el nombre' }]}
-                        >
+                        <Form.Item name="fullName" label="Nombre Completo" rules={[{ required: true, message: 'Ingresa el nombre' }]}>
                             <Input placeholder="Ej. Ana Pérez" />
                         </Form.Item>
                     </Col>
                     <Col span={12}>
-                        <Form.Item
-                            name="phone"
-                            label="Teléfono"
-                            rules={[{ required: true, message: 'Ingresa el teléfono' }]}
-                        >
+                        <Form.Item name="phone" label="Teléfono" rules={[{ required: true, message: 'Ingresa el teléfono' }]}>
                             <Input placeholder="55 1234 5678" />
                         </Form.Item>
                     </Col>
                 </Row>
                 <Row gutter={16}>
                     <Col span={12}>
-                        <Form.Item
-                            name="mainContactMethod"
-                            label="Medio de contacto principal"
-                            rules={[{ required: true }]}
-                        >
+                        <Form.Item name="loyaltyPoints" label="Puntos Lealtad (Bambinos)">
+                            <InputNumber style={{ width: '100%' }} disabled />
+                        </Form.Item>
+                    </Col>
+                    <Col span={12}>
+                        <Form.Item name="mainContactMethod" label="Medio de contacto principal" rules={[{ required: true }]}>
                             <Select>
                                 <Option value="Instagram">Instagram</Option>
                                 <Option value="WhatsApp">WhatsApp</Option>
@@ -90,11 +86,7 @@ export const CustomerForm = ({ open, onClose, onSubmit, initialValues, loading }
                         </Form.Item>
                     </Col>
                     <Col span={12}>
-                        <Form.Item
-                            name="type"
-                            label="Tipo de Cliente"
-                            rules={[{ required: true }]}
-                        >
+                        <Form.Item name="type" label="Tipo de Cliente" rules={[{ required: true }]}>
                             <Select>
                                 <Option value="B2C">Individual (B2C)</Option>
                                 <Option value="B2B">Negocio (B2B)</Option>
