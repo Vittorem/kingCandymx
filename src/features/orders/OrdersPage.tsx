@@ -10,7 +10,7 @@ import { OrderList } from './OrderList';
 import { getOrderDate } from '../../utils/dateHelpers';
 import dayjs from 'dayjs';
 import { increment } from 'firebase/firestore';
-import { calculateProductPoints, LOYALTY_RULES } from '../../utils/loyalty';
+import { calculateProductPoints, LOYALTY_RULES, getPointsCostForProduct } from '../../utils/loyalty';
 
 
 export const OrdersPage = () => {
@@ -46,7 +46,11 @@ export const OrdersPage = () => {
 
                 // Loyalty Points Logic
                 if (!order.pointsAwarded && order.customerId) {
-                    const pointsEarned = calculateProductPoints(order.productNameAtSale, order.quantity);
+                    const pointsCost = getPointsCostForProduct(order.productNameAtSale);
+                    const quantityRedeemed = pointsCost > 0 ? Math.round((order.pointsRedeemed || 0) / pointsCost) : 0;
+                    const paidQuantity = Math.max(0, order.quantity - quantityRedeemed);
+
+                    const pointsEarned = calculateProductPoints(order.productNameAtSale, paidQuantity);
                     const pointsRedeemed = order.pointsRedeemed || 0;
                     const pointsChange = pointsEarned - pointsRedeemed;
 
