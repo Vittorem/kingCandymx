@@ -1,14 +1,38 @@
 import { useState, useMemo } from 'react';
 import { Row, Col, Card, Statistic, Table, Tag, Button, Input, message } from 'antd';
-import { TrophyOutlined, GiftOutlined, WhatsAppOutlined, SearchOutlined } from '@ant-design/icons';
-import { useFirestoreSubscription } from '../../hooks/useFirestore';
+import { TrophyOutlined, GiftOutlined, WhatsAppOutlined, SearchOutlined, PlusOutlined } from '@ant-design/icons';
+import { useFirestoreSubscription, useFirestoreMutation } from '../../hooks/useFirestore';
 import { Customer, LoyaltyLedger } from '../../types';
+import { CustomerForm } from '../customers/components/CustomerForm';
 
 export const LoyaltyDashboardPage = () => {
     const { data: customers, loading: loadingCustomers } = useFirestoreSubscription<Customer>('customers');
     const { data: ledger } = useFirestoreSubscription<LoyaltyLedger>('loyalty_ledger');
+    const { add, update } = useFirestoreMutation('customers');
 
     const [searchText, setSearchText] = useState('');
+    const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+    const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
+
+    const handleAddCustomer = () => {
+        setEditingCustomer(null);
+        setIsDrawerOpen(true);
+    };
+
+    const handleCustomerSubmit = async (values: Partial<Customer>) => {
+        try {
+            if (editingCustomer) {
+                await update(editingCustomer.id, values);
+                message.success('Cliente actualizado');
+            } else {
+                await add(values);
+                message.success('Cliente creado');
+            }
+        } catch (error) {
+            message.error('Error al guardar');
+            throw error;
+        }
+    };
 
     // --- Statistics ---
     const totalPointsIssued = useMemo(() => {
@@ -96,9 +120,14 @@ export const LoyaltyDashboardPage = () => {
 
     return (
         <div style={{ padding: '0 24px', maxWidth: 1200, margin: '0 auto' }}>
-            <div style={{ marginBottom: 24 }}>
-                <h2>Programa de Lealtad (Dashboard)</h2>
-                <p style={{ color: '#666' }}>Monitorea el uso de puntos de tus clientes y contacta a los más leales.</p>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+                <div>
+                    <h2>Programa de Lealtad (Dashboard)</h2>
+                    <p style={{ color: '#666', margin: 0 }}>Monitorea el uso de puntos de tus clientes y contacta a los más leales.</p>
+                </div>
+                <Button type="primary" icon={<PlusOutlined />} onClick={handleAddCustomer}>
+                    Nuevo Cliente
+                </Button>
             </div>
 
             <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
@@ -150,6 +179,13 @@ export const LoyaltyDashboardPage = () => {
                     pagination={{ pageSize: 15 }}
                 />
             </Card>
+
+            <CustomerForm
+                open={isDrawerOpen}
+                onClose={() => setIsDrawerOpen(false)}
+                onSubmit={handleCustomerSubmit}
+                initialValues={editingCustomer}
+            />
         </div>
     );
 };
