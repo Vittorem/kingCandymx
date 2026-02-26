@@ -10,6 +10,7 @@ import { SettingsPage } from './features/settings/SettingsPage';
 import { CustomerList } from './features/customers/CustomerList';
 import { OrdersPage } from './features/orders/OrdersPage';
 import { DashboardPage } from './features/dashboard/DashboardPage';
+import { LoyaltyDashboardPage } from './features/loyalty/LoyaltyDashboardPage';
 import { InventoryPage } from './features/inventory/InventoryPage';
 import { ReportsPage } from './features/reports/ReportsPage';
 
@@ -27,6 +28,7 @@ function App() {
                                     <Route index element={<DashboardPage />} />
                                     <Route path="customers" element={<CustomerList />} />
                                     <Route path="orders" element={<OrdersPage />} />
+                                    <Route path="loyalty" element={<LoyaltyDashboardPage />} />
                                     <Route path="reports" element={<ReportsPage />} />
                                     <Route path="inventory" element={<InventoryPage />} />
                                     <Route path="settings" element={<SettingsPage />} />
