@@ -77,8 +77,12 @@ export function useFirestoreMutation<T extends BaseEntity>(collectionName: strin
 
     const add = async (data: Omit<T, keyof BaseEntity>) => {
         if (!user) throw new Error('No user');
+
+        // Remove undefined values to prevent Firestore errors
+        const cleanData = Object.fromEntries(Object.entries(data).filter(([_, v]) => v !== undefined));
+
         return addDoc(collection(db, `users/${user.uid}/${collectionName}`), {
-            ...data,
+            ...cleanData,
             ...createAuditFields(user.uid),
         });
     };
@@ -86,8 +90,12 @@ export function useFirestoreMutation<T extends BaseEntity>(collectionName: strin
     const update = async (id: string, data: Partial<Omit<T, keyof BaseEntity>>) => {
         if (!user) throw new Error('No user');
         const ref = doc(db, `users/${user.uid}/${collectionName}`, id);
+
+        // Remove undefined values to prevent Firestore errors
+        const cleanData = Object.fromEntries(Object.entries(data).filter(([_, v]) => v !== undefined));
+
         return updateDoc(ref, {
-            ...data,
+            ...cleanData,
             ...updateAuditFields(user.uid),
         });
     };

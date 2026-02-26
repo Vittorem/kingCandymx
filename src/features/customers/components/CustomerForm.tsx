@@ -22,7 +22,7 @@ export const CustomerForm = ({ open, onClose, onSubmit, initialValues, loading }
             if (initialValues) {
                 form.setFieldsValue(initialValues);
             } else {
-                form.setFieldsValue({ isActive: true, type: 'B2C', mainContactMethod: 'WhatsApp' });
+                form.setFieldsValue({ isActive: true, type: 'B2C', mainContactMethod: 'WhatsApp', loyaltyPoints: 0 });
             }
         }
     }, [open, initialValues, form]);
