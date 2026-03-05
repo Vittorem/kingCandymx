@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Row, Col, Card, Typography, Statistic, DatePicker, Divider, Button, Modal, List, Result, Tabs, Badge, Tag, Grid } from 'antd';
+import { Row, Col, Card, Typography, Statistic, DatePicker, Divider, Button, Modal, List, Result, Tabs, Badge, Tag } from 'antd';
 import {
     DollarOutlined,
     ShoppingCartOutlined,
@@ -41,6 +41,7 @@ import {
     type IntelligentAlert,
     type PeriodMetrics
 } from '../../utils/intelligentAlerts';
+import { useIsMobile } from '../../hooks/useIsMobile';
 
 const { RangePicker } = DatePicker;
 const { Title } = Typography;
@@ -69,11 +70,8 @@ function CustomizedDot({ cx = 0, cy = 0, value = 0 }: CustomizedDotProps) {
 
 // ─── Main Component ──────────────────────────────────────────────────────────
 
-const { useBreakpoint } = Grid;
-
 export const DashboardPage = () => {
-    const screens = useBreakpoint();
-    const isMobile = screens.md === false;
+    const isMobile = useIsMobile();
 
     const { data: orders } = useFirestoreSubscription<Order>('orders');
     const { data: customers } = useFirestoreSubscription<Customer>('customers');

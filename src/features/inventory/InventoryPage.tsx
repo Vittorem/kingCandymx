@@ -1,8 +1,9 @@
 import { useState, useMemo } from 'react';
-import { Table, Button, Modal, Form, Input, InputNumber, Select, Tag, Space, message, Card, Tabs, List as AntList, Typography, Divider, Row, Col, Grid } from 'antd';
+import { Table, Button, Modal, Form, Input, InputNumber, Select, Tag, Space, message, Card, Tabs, List as AntList, Typography, Divider, Row, Col } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, ArrowUpOutlined, ArrowDownOutlined, CalculatorOutlined } from '@ant-design/icons';
 import { useFirestoreSubscription, useFirestoreMutation } from '../../hooks/useFirestore';
 import { InventoryItem, Order } from '../../types';
+import { useIsMobile } from '../../hooks/useIsMobile';
 
 const { Title, Text } = Typography;
 
@@ -42,9 +43,7 @@ function InventoryList({ items, onEdit, onDelete, onMovement }: {
         },
     ];
 
-    const { useBreakpoint } = Grid;
-    const screens = useBreakpoint();
-    const isMobile = screens.md === false;
+    const isMobile = useIsMobile();
 
     return isMobile ? (
         <AntList
@@ -238,9 +237,7 @@ export const InventoryPage = () => {
         },
     ];
 
-    const { useBreakpoint } = Grid;
-    const screens = useBreakpoint();
-    const isMobile = screens.md === false;
+    const isMobile = useIsMobile();
 
     return (
         <div>

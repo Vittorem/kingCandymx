@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { Table, Button, Input, Space, Tag, Popconfirm, message, Card, Grid, List as AntList } from 'antd';
+import { Table, Button, Input, Space, Tag, Popconfirm, message, Card, List as AntList } from 'antd';
 import { PlusOutlined, SearchOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { useFirestoreSubscription, useFirestoreMutation } from '../../hooks/useFirestore';
 import { Customer } from '../../types';
 import { CustomerForm } from './components/CustomerForm';
+import { useIsMobile } from '../../hooks/useIsMobile';
 
 export const CustomerList = () => {
     const { data: customers, loading } = useFirestoreSubscription<Customer>('customers');
@@ -13,9 +14,7 @@ export const CustomerList = () => {
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
     const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
 
-    const { useBreakpoint } = Grid;
-    const screens = useBreakpoint();
-    const isMobile = screens.md === false;
+    const isMobile = useIsMobile();
 
     const handleAdd = () => {
         setEditingCustomer(null);

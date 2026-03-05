@@ -1,10 +1,11 @@
 import { useState, useMemo } from 'react';
-import { Row, Col, Card, Statistic, Table, Tag, Button, Input, message, Switch, Alert, Grid, List as AntList } from 'antd';
+import { Row, Col, Card, Statistic, Table, Tag, Button, Input, message, Switch, Alert, List as AntList } from 'antd';
 import { TrophyOutlined, GiftOutlined, WhatsAppOutlined, SearchOutlined, PlusOutlined } from '@ant-design/icons';
 import { useFirestoreSubscription, useFirestoreMutation } from '../../hooks/useFirestore';
 import { Customer, LoyaltyLedger, SystemSettings } from '../../types';
 import { CustomerForm } from '../customers/components/CustomerForm';
 import { LOYALTY_RULES, getLoyaltyRewardSummary } from '../../utils/loyalty';
+import { useIsMobile } from '../../hooks/useIsMobile';
 
 export const LoyaltyDashboardPage = () => {
     const { data: customers, loading: loadingCustomers } = useFirestoreSubscription<Customer>('customers');
@@ -22,9 +23,7 @@ export const LoyaltyDashboardPage = () => {
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
     const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
 
-    const { useBreakpoint } = Grid;
-    const screens = useBreakpoint();
-    const isMobile = screens.md === false;
+    const isMobile = useIsMobile();
 
     const handleAddCustomer = () => {
         setEditingCustomer(null);

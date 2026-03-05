@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { Table, Tag, Space, Button, Input, Select, Grid, List as AntList, Card } from 'antd';
+import { Table, Tag, Space, Button, Input, Select, List as AntList, Card } from 'antd';
 import { EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { Order, OrderStatus, ORDER_STATUSES } from '../../types';
 import { toDay } from '../../utils/dateHelpers';
+import { useIsMobile } from '../../hooks/useIsMobile';
 
 interface OrderListProps {
     orders: Order[];
@@ -13,9 +14,7 @@ interface OrderListProps {
 export const OrderList = ({ orders, onEdit, onDelete }: OrderListProps) => {
     const [searchText, setSearchText] = useState('');
     const [statusFilter, setStatusFilter] = useState<OrderStatus | null>(null);
-    const { useBreakpoint } = Grid;
-    const screens = useBreakpoint();
-    const isMobile = screens.md === false;
+    const isMobile = useIsMobile();
 
     const filteredData = orders
         .filter(o => {

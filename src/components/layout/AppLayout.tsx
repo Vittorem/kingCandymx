@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Layout, Menu, Button, Avatar, Dropdown, theme, Drawer, List } from 'antd';
+import { useIsMobile } from '../../hooks/useIsMobile';
 import {
     UserOutlined,
     ShoppingOutlined,
@@ -26,16 +27,7 @@ export const AppLayout = () => {
     const location = useLocation();
 
 
-    // We assume it's mobile if it's strictly smaller than 'md' and we default to false on server render.
-    // However useBreakpoint initializes to empty object before hydrating. Let's do a reliable check.
-    const [isMobile, setIsMobile] = useState(false);
-
-    useEffect(() => {
-        const handleResize = () => setIsMobile(window.innerWidth < 768);
-        handleResize(); // Initial check
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
-    }, []);
+    const isMobile = useIsMobile();
 
     const {
         token: { colorBgContainer, borderRadiusLG },

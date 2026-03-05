@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Button, Segmented, message, DatePicker, Modal, Grid } from 'antd';
+import { Button, Segmented, message, DatePicker, Modal } from 'antd';
 import { PlusOutlined, UnorderedListOutlined, AppstoreOutlined } from '@ant-design/icons';
 import { useFirestoreSubscription, useFirestoreMutation } from '../../hooks/useFirestore';
 import { Order, OrderStatus, Customer, SystemSettings } from '../../types';
@@ -11,6 +11,7 @@ import { getOrderDate } from '../../utils/dateHelpers';
 import dayjs from 'dayjs';
 import { increment } from 'firebase/firestore';
 import { calculateProductPoints, LOYALTY_RULES, getPointsCostForProduct, getLoyaltyRewardSummary } from '../../utils/loyalty';
+import { useIsMobile } from '../../hooks/useIsMobile';
 
 
 export const OrdersPage = () => {
@@ -21,9 +22,7 @@ export const OrdersPage = () => {
     const { add: addLoyalty } = useFirestoreMutation('loyalty_ledger');
     const { data: settings } = useFirestoreSubscription<SystemSettings>('settings');
 
-    const { useBreakpoint } = Grid;
-    const screens = useBreakpoint();
-    const isMobile = screens.md === false;
+    const isMobile = useIsMobile();
 
     const [viewMode, setViewMode] = useState<'Kanban' | 'List'>('Kanban');
     const [isFormOpen, setIsFormOpen] = useState(false);
