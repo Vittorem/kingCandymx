@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Row, Col, Card, Statistic, Table, Tag, Button, Input, message, Switch, Alert, Space } from 'antd';
+import { Row, Col, Card, Statistic, Table, Tag, Button, Input, message, Switch, Alert, Grid, List as AntList } from 'antd';
 import { TrophyOutlined, GiftOutlined, WhatsAppOutlined, SearchOutlined, PlusOutlined } from '@ant-design/icons';
 import { useFirestoreSubscription, useFirestoreMutation } from '../../hooks/useFirestore';
 import { Customer, LoyaltyLedger, SystemSettings } from '../../types';
@@ -21,6 +21,10 @@ export const LoyaltyDashboardPage = () => {
     const [searchText, setSearchText] = useState('');
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
     const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
+
+    const { useBreakpoint } = Grid;
+    const screens = useBreakpoint();
+    const isMobile = screens.md === false;
 
     const handleAddCustomer = () => {
         setEditingCustomer(null);
@@ -147,34 +151,31 @@ export const LoyaltyDashboardPage = () => {
     ];
 
     return (
-        <div style={{ padding: '0 24px', maxWidth: 1200, margin: '0 auto' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+        <div style={{ padding: isMobile ? '0' : '0 24px', maxWidth: 1200, margin: '0 auto' }}>
+            <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', justifyContent: 'space-between', alignItems: isMobile ? 'flex-start' : 'center', marginBottom: 24, gap: 16 }}>
                 <div>
-                    <h2>Programa de Lealtad (Dashboard)</h2>
-                    <p style={{ color: '#666', margin: 0 }}>Monitorea el uso de puntos de tus clientes y contacta a los más leales.</p>
+                    <h2 style={{ fontSize: isMobile ? '20px' : '24px', marginBottom: 8 }}>Programa de Lealtad (Dashboard)</h2>
+                    <p style={{ color: '#666', margin: 0, fontSize: isMobile ? '13px' : '14px' }}>Monitorea el uso de puntos de tus clientes y contacta a los más leales.</p>
                     <div style={{ marginTop: 12, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                        <Tag color="volcano" style={{ fontSize: '13px', padding: '4px 8px' }}>
+                        <Tag color="volcano" style={{ fontSize: '12px', padding: '4px 8px', whiteSpace: 'normal', height: 'auto', marginBottom: 4 }}>
                             Regla Oficial: Los clientes sólo pueden hacer redenciones válidas al realizar una compra adicional (dinero nuevo).
                         </Tag>
-                        <Tag color="green" style={{ fontSize: '13px', padding: '4px 8px' }}>
+                        <Tag color="green" style={{ fontSize: '12px', padding: '4px 8px', whiteSpace: 'normal', height: 'auto', marginBottom: 4 }}>
                             <b>Puntos por Compra:</b> Bambino ({LOYALTY_RULES.POINTS_PER_BAMBINO} pt), Mediano ({LOYALTY_RULES.POINTS_PER_MEDIANO} pts), Grande ({LOYALTY_RULES.POINTS_PER_GRANDE} pts)
                         </Tag>
-                        <Tag color="blue" style={{ fontSize: '13px', padding: '4px 8px' }}>
+                        <Tag color="blue" style={{ fontSize: '12px', padding: '4px 8px', whiteSpace: 'normal', height: 'auto', marginBottom: 4 }}>
                             <b>Costo de Redención:</b> Bambino ({LOYALTY_RULES.POINTS_FOR_FREE_BAMBINO} pts), Mediano ({LOYALTY_RULES.POINTS_FOR_FREE_MEDIANO} pts), Grande ({LOYALTY_RULES.POINTS_FOR_FREE_GRANDE} pts)
                         </Tag>
                     </div>
                 </div>
-                <Space>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: isLoyaltyEnabled ? '#f6ffed' : '#fff1f0', padding: '8px 16px', borderRadius: 8, border: `1px solid ${isLoyaltyEnabled ? '#b7eb8f' : '#ffa39e'}` }}>
-                        <strong style={{ color: isLoyaltyEnabled ? '#389e0d' : '#cf1322' }}>
+                <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: 12, width: isMobile ? '100%' : 'auto' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, background: isLoyaltyEnabled ? '#f6ffed' : '#fff1f0', padding: '8px 16px', borderRadius: 8, border: `1px solid ${isLoyaltyEnabled ? '#b7eb8f' : '#ffa39e'}`, width: isMobile ? '100%' : 'auto' }}>
+                        <strong style={{ color: isLoyaltyEnabled ? '#389e0d' : '#cf1322', fontSize: isMobile ? '13px' : '14px' }}>
                             {isLoyaltyEnabled ? 'Programa Activo' : 'Programa Inactivo'}
                         </strong>
                         <Switch checked={isLoyaltyEnabled} onChange={handleToggleLoyalty} />
                     </div>
-                    <Button type="primary" icon={<PlusOutlined />} onClick={handleAddCustomer}>
-                        Nuevo Cliente
-                    </Button>
-                </Space>
+                </div>
             </div>
 
             {!isLoyaltyEnabled && (
@@ -219,22 +220,49 @@ export const LoyaltyDashboardPage = () => {
                 </Col>
             </Row>
 
-            <Card title="Tabla de Posiciones (Mejores Clientes)">
+            <Card title={<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}><span>Tabla de Posiciones (Mejores Clientes)</span><Button size="small" type="primary" icon={<PlusOutlined />} onClick={handleAddCustomer}>Nuevo</Button></div>}>
                 <div style={{ marginBottom: 16 }}>
                     <Input
                         prefix={<SearchOutlined />}
                         placeholder="Buscar cliente por nombre o teléfono..."
-                        style={{ width: 300 }}
+                        style={{ width: isMobile ? '100%' : 300 }}
                         onChange={e => setSearchText(e.target.value)}
                     />
                 </div>
-                <Table
-                    columns={columns}
-                    dataSource={filteredCustomers}
-                    rowKey="id"
-                    loading={loadingCustomers}
-                    pagination={{ pageSize: 15 }}
-                />
+                {isMobile ? (
+                    <AntList
+                        dataSource={filteredCustomers}
+                        loading={loadingCustomers}
+                        renderItem={item => (
+                            <Card size="small" style={{ marginBottom: 8 }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                                    <strong style={{ fontSize: 16 }}>{item.fullName}</strong>
+                                    <Tag color={(item.loyaltyPoints || 0) >= LOYALTY_RULES.POINTS_FOR_FREE_BAMBINO ? 'gold' : 'blue'}>
+                                        {item.loyaltyPoints || 0} pts
+                                        {(item.loyaltyPoints || 0) >= LOYALTY_RULES.POINTS_FOR_FREE_BAMBINO && <TrophyOutlined style={{ marginLeft: 4 }} />}
+                                    </Tag>
+                                </div>
+                                <div style={{ color: '#666', fontSize: 14, marginBottom: 12 }}>📱 {item.phone}</div>
+                                <Button
+                                    block
+                                    type={(item.loyaltyPoints || 0) >= LOYALTY_RULES.POINTS_FOR_FREE_BAMBINO ? 'primary' : 'default'}
+                                    icon={<WhatsAppOutlined />}
+                                    onClick={() => handleSendWhatsApp(item)}
+                                >
+                                    Notificar por WhatsApp
+                                </Button>
+                            </Card>
+                        )}
+                    />
+                ) : (
+                    <Table
+                        columns={columns}
+                        dataSource={filteredCustomers}
+                        rowKey="id"
+                        loading={loadingCustomers}
+                        pagination={{ pageSize: 15 }}
+                    />
+                )}
             </Card>
 
             <CustomerForm
