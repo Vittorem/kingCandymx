@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Table, Tag, Space, Button, Input, Select } from 'antd';
+import { Table, Tag, Space, Button, Input, Select, Grid, List as AntList, Card } from 'antd';
 import { EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { Order, OrderStatus, ORDER_STATUSES } from '../../types';
 import { toDay } from '../../utils/dateHelpers';
@@ -13,6 +13,9 @@ interface OrderListProps {
 export const OrderList = ({ orders, onEdit, onDelete }: OrderListProps) => {
     const [searchText, setSearchText] = useState('');
     const [statusFilter, setStatusFilter] = useState<OrderStatus | null>(null);
+    const { useBreakpoint } = Grid;
+    const screens = useBreakpoint();
+    const isMobile = screens.md === false;
 
     const filteredData = orders
         .filter(o => {
@@ -79,12 +82,12 @@ export const OrderList = ({ orders, onEdit, onDelete }: OrderListProps) => {
 
     return (
         <div>
-            <Space style={{ marginBottom: 16 }}>
-                <Input placeholder="Buscar cliente..." onChange={e => setSearchText(e.target.value)} style={{ width: 200 }} />
+            <Space style={{ marginBottom: 16, display: 'flex', flexWrap: 'wrap' }}>
+                <Input placeholder="Buscar cliente..." onChange={e => setSearchText(e.target.value)} style={{ width: isMobile ? '100%' : 200 }} />
                 <Select
                     placeholder="Filtrar Estado"
                     allowClear
-                    style={{ width: 150 }}
+                    style={{ width: isMobile ? '100%' : 150 }}
                     onChange={setStatusFilter}
                 >
                     {ORDER_STATUSES.map(s => (
@@ -92,12 +95,40 @@ export const OrderList = ({ orders, onEdit, onDelete }: OrderListProps) => {
                     ))}
                 </Select>
             </Space>
-            <Table
-                columns={columns}
-                dataSource={filteredData}
-                rowKey="id"
-                size="small"
-            />
+            {isMobile ? (
+                <AntList
+                    dataSource={filteredData}
+                    renderItem={item => (
+                        <Card size="small" style={{ marginBottom: 8 }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                                <strong style={{ fontSize: 16 }}>{item.customerName}</strong>
+                                <Tag color={item.status === 'Entregado' ? 'green' : 'blue'}>{item.status}</Tag>
+                            </div>
+                            <div style={{ color: '#666', fontSize: 13, marginBottom: 8 }}>
+                                <div>📅 {toDay(item.deliveryDate)?.format('DD/MM/YYYY HH:mm')}</div>
+                                <div>📦 {item.items && item.items.length > 0
+                                    ? item.items.map(i => `${i.quantity}x ${i.productNameAtSale}`).join(', ')
+                                    : `${item.quantity || 1}x ${item.productNameAtSale}`}
+                                </div>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 }}>
+                                <strong style={{ fontSize: 16 }}>${item.total.toFixed(2)}</strong>
+                                <Space>
+                                    <Button icon={<EditOutlined />} onClick={() => onEdit(item)} />
+                                    <Button icon={<DeleteOutlined />} danger onClick={() => onDelete(item.id)} />
+                                </Space>
+                            </div>
+                        </Card>
+                    )}
+                />
+            ) : (
+                <Table
+                    columns={columns}
+                    dataSource={filteredData}
+                    rowKey="id"
+                    size="small"
+                />
+            )}
         </div>
     );
 };

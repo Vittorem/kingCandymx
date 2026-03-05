@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Table, Button, Input, Space, Tag, Popconfirm, message, Card } from 'antd';
+import { Table, Button, Input, Space, Tag, Popconfirm, message, Card, Grid, List as AntList } from 'antd';
 import { PlusOutlined, SearchOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { useFirestoreSubscription, useFirestoreMutation } from '../../hooks/useFirestore';
 import { Customer } from '../../types';
@@ -12,6 +12,10 @@ export const CustomerList = () => {
     const [searchText, setSearchText] = useState('');
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
     const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
+
+    const { useBreakpoint } = Grid;
+    const screens = useBreakpoint();
+    const isMobile = screens.md === false;
 
     const handleAdd = () => {
         setEditingCustomer(null);
@@ -126,17 +130,45 @@ export const CustomerList = () => {
                     <Input
                         prefix={<SearchOutlined />}
                         placeholder="Buscar por nombre o teléfono..."
-                        style={{ width: 300 }}
+                        style={{ width: isMobile ? '100%' : 300 }}
                         onChange={e => setSearchText(e.target.value)}
                     />
                 </div>
 
-                <Table
-                    columns={columns}
-                    dataSource={filteredData}
-                    rowKey="id"
-                    loading={loading}
-                />
+                {isMobile ? (
+                    <AntList
+                        dataSource={filteredData}
+                        loading={loading}
+                        renderItem={item => (
+                            <Card size="small" style={{ marginBottom: 8 }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                                    <strong style={{ fontSize: 16 }}>{item.fullName}</strong>
+                                    <Tag color={(item.loyaltyPoints || 0) >= 6 ? 'gold' : 'blue'}>{item.loyaltyPoints || 0} pts</Tag>
+                                </div>
+                                <div style={{ color: '#666', fontSize: 14 }}>
+                                    <div>📱 {item.phone}</div>
+                                    <div style={{ margin: '4px 0' }}>🗣️ {item.mainContactMethod}</div>
+                                    <div>{item.tags && item.tags.length > 0 && item.tags.map(t => <Tag key={t} style={{ fontSize: 11, padding: '0 4px' }}>{t}</Tag>)}</div>
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 12 }}>
+                                    <Space>
+                                        <Button icon={<EditOutlined />} onClick={() => handleEdit(item)} />
+                                        <Popconfirm title="¿Eliminar cliente?" description="Esto es una eliminación lógica." onConfirm={() => handleDelete(item.id)}>
+                                            <Button icon={<DeleteOutlined />} danger />
+                                        </Popconfirm>
+                                    </Space>
+                                </div>
+                            </Card>
+                        )}
+                    />
+                ) : (
+                    <Table
+                        columns={columns}
+                        dataSource={filteredData}
+                        rowKey="id"
+                        loading={loading}
+                    />
+                )}
             </Card>
 
             <CustomerForm

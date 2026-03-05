@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Table, Button, Modal, Form, Input, InputNumber, Select, Tag, Space, message, Card, Tabs, List, Typography, Divider, Row, Col } from 'antd';
+import { Table, Button, Modal, Form, Input, InputNumber, Select, Tag, Space, message, Card, Tabs, List as AntList, Typography, Divider, Row, Col, Grid } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, ArrowUpOutlined, ArrowDownOutlined, CalculatorOutlined } from '@ant-design/icons';
 import { useFirestoreSubscription, useFirestoreMutation } from '../../hooks/useFirestore';
 import { InventoryItem, Order } from '../../types';
@@ -42,7 +42,39 @@ function InventoryList({ items, onEdit, onDelete, onMovement }: {
         },
     ];
 
-    return <Table dataSource={items} columns={columns} rowKey="id" size="small" />;
+    const { useBreakpoint } = Grid;
+    const screens = useBreakpoint();
+    const isMobile = screens.md === false;
+
+    return isMobile ? (
+        <AntList
+            dataSource={items}
+            renderItem={item => {
+                const isLow = item.stockPackages <= item.minPackages;
+                return (
+                    <Card size="small" style={{ marginBottom: 8 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                            <strong style={{ fontSize: 16 }}>{item.name}</strong>
+                            <Tag color={isLow ? 'red' : 'green'}>{item.stockPackages} / {item.minPackages} {item.purchaseUnitLabel}</Tag>
+                        </div>
+                        <div style={{ color: '#666', fontSize: 13, margin: '8px 0' }}>📂 {item.category}</div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <Space>
+                                <Button icon={<ArrowUpOutlined />} onClick={() => onMovement(item, 'IN')} />
+                                <Button icon={<ArrowDownOutlined />} onClick={() => onMovement(item, 'OUT')} />
+                            </Space>
+                            <Space>
+                                <Button icon={<EditOutlined />} onClick={() => onEdit(item)} />
+                                <Button icon={<DeleteOutlined />} danger onClick={() => onDelete(item.id)} />
+                            </Space>
+                        </div>
+                    </Card>
+                );
+            }}
+        />
+    ) : (
+        <Table dataSource={items} columns={columns} rowKey="id" size="small" />
+    );
 }
 
 // ─── Planning Calculator ─────────────────────────────────────────────────────
@@ -69,16 +101,16 @@ function PlanningCalculator({ items, orders }: { items: InventoryItem[]; orders:
             {suggestions.length === 0 ? (
                 <Text type="success">✅ Todo el inventario está por encima del nivel mínimo</Text>
             ) : (
-                <List
+                <AntList
                     dataSource={suggestions}
                     renderItem={s => (
-                        <List.Item>
-                            <List.Item.Meta
+                        <AntList.Item>
+                            <AntList.Item.Meta
                                 title={s.name}
                                 description={`Stock: ${s.currentStock} / Mín: ${s.minimum}`}
                             />
                             <Tag color="red">Comprar al menos {s.deficit}</Tag>
-                        </List.Item>
+                        </AntList.Item>
                     )}
                 />
             )}
@@ -206,10 +238,16 @@ export const InventoryPage = () => {
         },
     ];
 
+    const { useBreakpoint } = Grid;
+    const screens = useBreakpoint();
+    const isMobile = screens.md === false;
+
     return (
         <div>
-            <Title level={2}>Inventario</Title>
-            <Tabs items={tabItems} />
+            <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', justifyContent: 'space-between', alignItems: isMobile ? 'flex-start' : 'center', marginBottom: 16 }}>
+                <Title level={isMobile ? 3 : 2} style={{ margin: 0 }}>Inventario</Title>
+            </div>
+            <Tabs items={tabItems} size={isMobile ? "small" : "middle"} />
 
             {/* New/Edit Item Modal */}
             <Modal

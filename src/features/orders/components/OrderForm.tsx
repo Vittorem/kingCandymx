@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Drawer, Form, Select, DatePicker, InputNumber, Radio, Divider, Input, Button, Space, Typography, Row, Col, Alert, Checkbox } from 'antd';
+import { Drawer, Form, Select, DatePicker, InputNumber, Radio, Divider, Input, Button, Space, Typography, Row, Col, Alert, Checkbox, Grid } from 'antd';
 import { PlusOutlined, DeleteOutlined } from '@ant-design/icons';
 import { useFirestoreSubscription } from '../../../hooks/useFirestore';
 import { Customer, Product, Flavor, Channel, Order, ORDER_STATUSES, OrderItem, SystemSettings } from '../../../types';
@@ -20,6 +20,10 @@ const { TextArea } = Input;
 
 export const OrderForm = ({ open, onClose, onSubmit, initialValues, loading }: OrderFormProps) => {
     const [form] = Form.useForm();
+
+    const { useBreakpoint } = Grid;
+    const screens = useBreakpoint();
+    const isMobile = screens.md === false;
 
     // Catalogs & Data
     const { data: customers } = useFirestoreSubscription<Customer>('customers');
@@ -255,7 +259,9 @@ export const OrderForm = ({ open, onClose, onSubmit, initialValues, loading }: O
     return (
         <Drawer
             title={initialValues ? 'Editar Pedido' : 'Nuevo Pedido'}
-            width={720}
+            width={isMobile ? '100%' : 720}
+            placement={isMobile ? 'bottom' : 'right'}
+            height={isMobile ? '90vh' : '100%'}
             onClose={onClose}
             open={open}
             extra={

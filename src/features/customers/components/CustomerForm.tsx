@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Drawer, Form, Input, Select, Button, InputNumber, Row, Col, Space, Divider, Switch } from 'antd';
+import { Drawer, Form, Input, Select, Button, InputNumber, Row, Col, Space, Divider, Switch, Grid } from 'antd';
 import { Customer } from '../../../types';
 
 interface CustomerFormProps {
@@ -15,6 +15,9 @@ const { TextArea } = Input;
 
 export const CustomerForm = ({ open, onClose, onSubmit, initialValues, loading }: CustomerFormProps) => {
     const [form] = Form.useForm();
+    const { useBreakpoint } = Grid;
+    const screens = useBreakpoint();
+    const isMobile = screens.md === false;
 
     useEffect(() => {
         if (open) {
@@ -40,7 +43,9 @@ export const CustomerForm = ({ open, onClose, onSubmit, initialValues, loading }
     return (
         <Drawer
             title={initialValues ? 'Editar Cliente' : 'Nuevo Cliente'}
-            width={720}
+            width={isMobile ? '100%' : 720}
+            placement={isMobile ? 'bottom' : 'right'}
+            height={isMobile ? '90vh' : '100%'}
             onClose={onClose}
             open={open}
             styles={{ body: { paddingBottom: 80 } }}

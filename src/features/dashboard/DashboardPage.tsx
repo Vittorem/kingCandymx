@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Row, Col, Card, Typography, Statistic, DatePicker, Divider, Button, Modal, List, Result, Tabs, Badge, Tag } from 'antd';
+import { Row, Col, Card, Typography, Statistic, DatePicker, Divider, Button, Modal, List, Result, Tabs, Badge, Tag, Grid } from 'antd';
 import {
     DollarOutlined,
     ShoppingCartOutlined,
@@ -69,7 +69,12 @@ function CustomizedDot({ cx = 0, cy = 0, value = 0 }: CustomizedDotProps) {
 
 // ─── Main Component ──────────────────────────────────────────────────────────
 
+const { useBreakpoint } = Grid;
+
 export const DashboardPage = () => {
+    const screens = useBreakpoint();
+    const isMobile = screens.md === false;
+
     const { data: orders } = useFirestoreSubscription<Order>('orders');
     const { data: customers } = useFirestoreSubscription<Customer>('customers');
 
@@ -417,9 +422,10 @@ export const DashboardPage = () => {
 
     return (
         <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-                <Title level={2} style={{ margin: 0 }}>Dashboard</Title>
+            <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', justifyContent: 'space-between', alignItems: isMobile ? 'flex-start' : 'center', gap: 16, marginBottom: 24 }}>
+                <Title level={isMobile ? 3 : 2} style={{ margin: 0 }}>Dashboard</Title>
                 <RangePicker
+                    style={{ width: isMobile ? '100%' : 'auto' }}
                     value={dateRange}
                     onChange={(vals) => {
                         if (vals?.[0] && vals?.[1]) setDateRange([vals[0], vals[1]]);
@@ -553,12 +559,13 @@ export const DashboardPage = () => {
             <Card title="📊 Análisis Avanzado" size="small" style={{ marginBottom: 16 }}>
                 <Tabs
                     defaultActiveKey="rfm"
+                    size={isMobile ? "small" : "middle"}
                     items={[
                         {
                             key: 'rfm',
                             label: (
                                 <span>
-                                    <TrophyOutlined /> RFM Analysis
+                                    <TrophyOutlined /> {!isMobile && 'RFM Analysis'}
                                 </span>
                             ),
                             children: rfmTabContent,
@@ -567,7 +574,7 @@ export const DashboardPage = () => {
                             key: 'channels',
                             label: (
                                 <span>
-                                    <LineChartOutlined /> Canales
+                                    <LineChartOutlined /> {!isMobile && 'Canales'}
                                 </span>
                             ),
                             children: channelTabContent,
@@ -576,7 +583,7 @@ export const DashboardPage = () => {
                             key: 'temporal',
                             label: (
                                 <span>
-                                    <ClockCircleOutlined /> Patrones Temporales
+                                    <ClockCircleOutlined /> {!isMobile && 'Patrones Temporales'}
                                 </span>
                             ),
                             children: temporalTabContent,
@@ -586,7 +593,7 @@ export const DashboardPage = () => {
                             label: (
                                 <span>
                                     <AlertOutlined />
-                                    {' '}Alertas
+                                    {' '}{!isMobile && 'Alertas'}
                                     {intelligentAlerts.length > 0 && (
                                         <Badge
                                             count={intelligentAlerts.length}

@@ -18,7 +18,16 @@ const queryClient = new QueryClient();
 
 function App() {
     return (
-        <ConfigProvider locale={esES}>
+        <ConfigProvider
+            locale={esES}
+            theme={{
+                token: {
+                    controlHeight: 40, // Base height for buttons/inputs
+                    controlHeightLG: 48, // Large buttons
+                    fontSize: 16, // Better readability on mobile, avoids iOS automatic zoom
+                }
+            }}
+        >
             <QueryClientProvider client={queryClient}>
                 <ErrorBoundary>
                     <AuthGate>

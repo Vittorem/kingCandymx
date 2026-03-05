@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Button, Segmented, message, DatePicker, Modal } from 'antd';
+import { Button, Segmented, message, DatePicker, Modal, Grid } from 'antd';
 import { PlusOutlined, UnorderedListOutlined, AppstoreOutlined } from '@ant-design/icons';
 import { useFirestoreSubscription, useFirestoreMutation } from '../../hooks/useFirestore';
 import { Order, OrderStatus, Customer, SystemSettings } from '../../types';
@@ -20,6 +20,10 @@ export const OrdersPage = () => {
     const { update: updateCustomer } = useFirestoreMutation('customers');
     const { add: addLoyalty } = useFirestoreMutation('loyalty_ledger');
     const { data: settings } = useFirestoreSubscription<SystemSettings>('settings');
+
+    const { useBreakpoint } = Grid;
+    const screens = useBreakpoint();
+    const isMobile = screens.md === false;
 
     const [viewMode, setViewMode] = useState<'Kanban' | 'List'>('Kanban');
     const [isFormOpen, setIsFormOpen] = useState(false);
@@ -159,17 +163,20 @@ export const OrdersPage = () => {
 
     return (
         <div style={{ height: '100%' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
-                <div style={{ display: 'flex', gap: 16 }}>
-                    <Segmented<string>
-                        options={[
-                            { label: 'Kanban', value: 'Kanban', icon: <AppstoreOutlined /> },
-                            { label: 'Lista', value: 'List', icon: <UnorderedListOutlined /> },
-                        ]}
-                        value={viewMode}
-                        onChange={(val) => setViewMode(val as 'Kanban' | 'List')}
-                    />
+            <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', justifyContent: 'space-between', marginBottom: 16, gap: 16 }}>
+                <div style={{ display: 'flex', gap: 16, width: isMobile ? '100%' : 'auto' }}>
+                    {!isMobile && (
+                        <Segmented<string>
+                            options={[
+                                { label: 'Kanban', value: 'Kanban', icon: <AppstoreOutlined /> },
+                                { label: 'Lista', value: 'List', icon: <UnorderedListOutlined /> },
+                            ]}
+                            value={viewMode}
+                            onChange={(val) => setViewMode(val as 'Kanban' | 'List')}
+                        />
+                    )}
                     <DatePicker
+                        style={{ flex: 1 }}
                         picker="month"
                         value={selectedMonth}
                         onChange={(val) => val && setSelectedMonth(val)}
@@ -179,7 +186,7 @@ export const OrdersPage = () => {
 
                     />
                 </div>
-                <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>
+                <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate} style={{ width: isMobile ? '100%' : 'auto' }}>
                     Nuevo Pedido
                 </Button>
             </div>
@@ -188,7 +195,7 @@ export const OrdersPage = () => {
                 <OrderSummary orders={filteredOrders} />
             </div>
 
-            {viewMode === 'Kanban' ? (
+            {viewMode === 'Kanban' && !isMobile ? (
                 <OrderKanbanBoard
                     orders={filteredOrders}
                     onStatusChange={handleStatusChange}
