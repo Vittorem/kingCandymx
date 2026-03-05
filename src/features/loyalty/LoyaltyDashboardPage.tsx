@@ -1,15 +1,22 @@
 import { useState, useMemo } from 'react';
-import { Row, Col, Card, Statistic, Table, Tag, Button, Input, message } from 'antd';
+import { Row, Col, Card, Statistic, Table, Tag, Button, Input, message, Switch, Alert, Space } from 'antd';
 import { TrophyOutlined, GiftOutlined, WhatsAppOutlined, SearchOutlined, PlusOutlined } from '@ant-design/icons';
 import { useFirestoreSubscription, useFirestoreMutation } from '../../hooks/useFirestore';
-import { Customer, LoyaltyLedger } from '../../types';
+import { Customer, LoyaltyLedger, SystemSettings } from '../../types';
 import { CustomerForm } from '../customers/components/CustomerForm';
-import { LOYALTY_RULES } from '../../utils/loyalty';
+import { LOYALTY_RULES, getLoyaltyRewardSummary } from '../../utils/loyalty';
 
 export const LoyaltyDashboardPage = () => {
     const { data: customers, loading: loadingCustomers } = useFirestoreSubscription<Customer>('customers');
     const { data: ledger } = useFirestoreSubscription<LoyaltyLedger>('loyalty_ledger');
     const { add, update } = useFirestoreMutation('customers');
+
+    // Settings
+    const { data: settings } = useFirestoreSubscription<SystemSettings>('settings');
+    const { add: addSettings, update: updateSettings } = useFirestoreMutation('settings');
+
+    const loyaltySettings = settings[0];
+    const isLoyaltyEnabled = loyaltySettings ? loyaltySettings.loyaltyEnabled : true;
 
     const [searchText, setSearchText] = useState('');
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -35,13 +42,27 @@ export const LoyaltyDashboardPage = () => {
         }
     };
 
+    const handleToggleLoyalty = async (checked: boolean) => {
+        try {
+            if (loyaltySettings) {
+                await updateSettings(loyaltySettings.id, { loyaltyEnabled: checked } as any);
+            } else {
+                await addSettings({ loyaltyEnabled: checked } as any);
+            }
+            message.success(`Programa de lealtad ${checked ? 'activado' : 'desactivado'}`);
+        } catch (error) {
+            console.error(error);
+            message.error('Error al actualizar la configuración');
+        }
+    };
+
     // --- Statistics ---
     const totalPointsIssued = useMemo(() => {
-        return ledger.filter(l => l.reason === 'purchase' && l.pointsChange > 0).reduce((acc, l) => acc + l.pointsChange, 0);
+        return ledger.filter(l => l.reason === 'purchase').reduce((acc, l) => acc + Math.max(0, l.pointsChange), 0);
     }, [ledger]);
 
     const totalPointsRedeemed = useMemo(() => {
-        return ledger.filter(l => l.reason === 'redemption' && l.pointsChange > 0).reduce((acc, l) => acc + l.pointsChange, 0);
+        return ledger.filter(l => l.reason === 'redemption').reduce((acc, l) => acc + Math.abs(l.pointsChange), 0);
     }, [ledger]);
 
     const activeCustomersWithPoints = useMemo(() => {
@@ -73,17 +94,7 @@ export const LoyaltyDashboardPage = () => {
         const firstName = customer.fullName.split(' ')[0] || customer.fullName;
 
         if (isEligible) {
-            let rewardText = '';
-            if (pts >= LOYALTY_RULES.POINTS_FOR_FREE_GRANDE) {
-                const qty = Math.floor(pts / LOYALTY_RULES.POINTS_FOR_FREE_GRANDE);
-                rewardText = `${qty} Grande${qty > 1 ? 's' : ''}`;
-            } else if (pts >= LOYALTY_RULES.POINTS_FOR_FREE_MEDIANO) {
-                const qty = Math.floor(pts / LOYALTY_RULES.POINTS_FOR_FREE_MEDIANO);
-                rewardText = `${qty} Mediano${qty > 1 ? 's' : ''}`;
-            } else {
-                const qty = Math.floor(pts / LOYALTY_RULES.POINTS_FOR_FREE_BAMBINO);
-                rewardText = `${qty} Bambino${qty > 1 ? 's' : ''}`;
-            }
+            const rewardText = getLoyaltyRewardSummary(pts);
             msg = `Hola ${firstName}, tienes ${pts} puntos de lealtad acumulados en King Candy La Casa Del Tiramisu, ¡suficientes para redimir ${rewardText} gratis! Comunicate con nosotros para saber como redimirlos.`;
         } else {
             msg = `Hola ${firstName}, tienes ${pts} puntos de lealtad acumulados en King Candy La Casa Del Tiramisu. ¡Haz un pedido pronto para seguir sumando y ganar premios gratis!`;
@@ -141,14 +152,40 @@ export const LoyaltyDashboardPage = () => {
                 <div>
                     <h2>Programa de Lealtad (Dashboard)</h2>
                     <p style={{ color: '#666', margin: 0 }}>Monitorea el uso de puntos de tus clientes y contacta a los más leales.</p>
-                    <Tag color="volcano" style={{ marginTop: 8, fontSize: '13px', padding: '4px 8px' }}>
-                        Regla Oficial: Los clientes sólo pueden hacer redenciones válidas al realizar una compra adicional (dinero nuevo).
-                    </Tag>
+                    <div style={{ marginTop: 12, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                        <Tag color="volcano" style={{ fontSize: '13px', padding: '4px 8px' }}>
+                            Regla Oficial: Los clientes sólo pueden hacer redenciones válidas al realizar una compra adicional (dinero nuevo).
+                        </Tag>
+                        <Tag color="green" style={{ fontSize: '13px', padding: '4px 8px' }}>
+                            <b>Puntos por Compra:</b> Bambino ({LOYALTY_RULES.POINTS_PER_BAMBINO} pt), Mediano ({LOYALTY_RULES.POINTS_PER_MEDIANO} pts), Grande ({LOYALTY_RULES.POINTS_PER_GRANDE} pts)
+                        </Tag>
+                        <Tag color="blue" style={{ fontSize: '13px', padding: '4px 8px' }}>
+                            <b>Costo de Redención:</b> Bambino ({LOYALTY_RULES.POINTS_FOR_FREE_BAMBINO} pts), Mediano ({LOYALTY_RULES.POINTS_FOR_FREE_MEDIANO} pts), Grande ({LOYALTY_RULES.POINTS_FOR_FREE_GRANDE} pts)
+                        </Tag>
+                    </div>
                 </div>
-                <Button type="primary" icon={<PlusOutlined />} onClick={handleAddCustomer}>
-                    Nuevo Cliente
-                </Button>
+                <Space>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: isLoyaltyEnabled ? '#f6ffed' : '#fff1f0', padding: '8px 16px', borderRadius: 8, border: `1px solid ${isLoyaltyEnabled ? '#b7eb8f' : '#ffa39e'}` }}>
+                        <strong style={{ color: isLoyaltyEnabled ? '#389e0d' : '#cf1322' }}>
+                            {isLoyaltyEnabled ? 'Programa Activo' : 'Programa Inactivo'}
+                        </strong>
+                        <Switch checked={isLoyaltyEnabled} onChange={handleToggleLoyalty} />
+                    </div>
+                    <Button type="primary" icon={<PlusOutlined />} onClick={handleAddCustomer}>
+                        Nuevo Cliente
+                    </Button>
+                </Space>
             </div>
+
+            {!isLoyaltyEnabled && (
+                <Alert
+                    message="El programa de lealtad está desactivado"
+                    description="Los clientes no acumularán nuevos puntos ni podrán redimirlos en sus pedidos hasta que vuelvas a activarlo."
+                    type="error"
+                    showIcon
+                    style={{ marginBottom: 24 }}
+                />
+            )}
 
             <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
                 <Col xs={24} sm={8}>

@@ -14,9 +14,9 @@ export function exportOrdersExcel(orders: Order[], customers: Customer[]) {
         return {
             Fecha: date ? date.format('YYYY-MM-DD') : 'N/A',
             Cliente: o.customerName,
-            Producto: o.productNameAtSale,
-            Sabor: o.flavorNameAtSale,
-            Cantidad: o.quantity,
+            Producto: o.items && o.items.length > 0 ? o.items.map(i => i.productNameAtSale).join(', ') : o.productNameAtSale,
+            Sabor: o.items && o.items.length > 0 ? o.items.map(i => i.flavorNameAtSale).join(', ') : o.flavorNameAtSale,
+            Cantidad: o.items && o.items.length > 0 ? o.items.reduce((acc, curr) => acc + (curr.quantity || 1), 0) : (o.quantity || 1),
             Total: o.total,
             Estado: o.status,
         };
@@ -57,11 +57,16 @@ export function exportOrdersPDF(
 
     const tableData = orders.map(o => {
         const date = getOrderDate(o);
+        const productName = o.items && o.items.length > 0
+            ? o.items.map(i => `${i.quantity}x ${i.productNameAtSale}`).join(', ')
+            : `${o.productNameAtSale} (${o.flavorNameAtSale})`;
+        const qty = o.items && o.items.length > 0 ? o.items.reduce((acc, curr) => acc + (curr.quantity || 1), 0) : (o.quantity || 1);
+
         return [
             date ? date.format('DD/MM') : 'N/A',
             o.customerName ?? 'N/A',
-            `${o.productNameAtSale} (${o.flavorNameAtSale})`,
-            o.quantity,
+            productName,
+            String(qty),
             `$${o.total}`,
         ];
     });

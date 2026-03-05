@@ -40,3 +40,18 @@ export const calculateMaxRedeemableProducts = (productName: string, loyaltyPoint
 export const calculatePointsCost = (productName: string, quantityRedeemed: number): number => {
     return quantityRedeemed * getPointsCostForProduct(productName);
 };
+
+export const getLoyaltyRewardSummary = (points: number): string => {
+    if (points >= LOYALTY_RULES.POINTS_FOR_FREE_GRANDE) {
+        const qty = Math.floor(points / LOYALTY_RULES.POINTS_FOR_FREE_GRANDE);
+        return `${qty} Grande${qty > 1 ? 's' : ''}`;
+    } else if (points >= LOYALTY_RULES.POINTS_FOR_FREE_MEDIANO) {
+        const qty = Math.floor(points / LOYALTY_RULES.POINTS_FOR_FREE_MEDIANO);
+        return `${qty} Mediano${qty > 1 ? 's' : ''}`;
+    } else if (points >= LOYALTY_RULES.POINTS_FOR_FREE_BAMBINO) {
+        const qty = Math.floor(points / LOYALTY_RULES.POINTS_FOR_FREE_BAMBINO);
+        return `${qty} Bambino${qty > 1 ? 's' : ''}`;
+    }
+    return '';
+};
+

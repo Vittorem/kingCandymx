@@ -37,7 +37,12 @@ export const OrderList = ({ orders, onEdit, onDelete }: OrderListProps) => {
         {
             title: 'Producto',
             key: 'product',
-            render: (_: unknown, r: Order) => `${r.productNameAtSale} (${r.flavorNameAtSale}) x${r.quantity}`,
+            render: (_: unknown, r: Order) => {
+                if (r.items && r.items.length > 0) {
+                    return r.items.map(i => `${i.quantity}x ${i.productNameAtSale} (${i.flavorNameAtSale})`).join(', ');
+                }
+                return `${r.quantity || 1}x ${r.productNameAtSale} (${r.flavorNameAtSale})`;
+            },
         },
         {
             title: 'Total',

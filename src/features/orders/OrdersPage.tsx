@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Button, Segmented, message, DatePicker, Modal } from 'antd';
 import { PlusOutlined, UnorderedListOutlined, AppstoreOutlined } from '@ant-design/icons';
 import { useFirestoreSubscription, useFirestoreMutation } from '../../hooks/useFirestore';
-import { Order, OrderStatus, Customer } from '../../types';
+import { Order, OrderStatus, Customer, SystemSettings } from '../../types';
 import { OrderForm } from './components/OrderForm';
 import { OrderKanbanBoard } from './components/OrderKanbanBoard';
 import { OrderSummary } from './components/OrderSummary';
@@ -10,7 +10,7 @@ import { OrderList } from './OrderList';
 import { getOrderDate } from '../../utils/dateHelpers';
 import dayjs from 'dayjs';
 import { increment } from 'firebase/firestore';
-import { calculateProductPoints, LOYALTY_RULES, getPointsCostForProduct } from '../../utils/loyalty';
+import { calculateProductPoints, LOYALTY_RULES, getPointsCostForProduct, getLoyaltyRewardSummary } from '../../utils/loyalty';
 
 
 export const OrdersPage = () => {
@@ -19,11 +19,15 @@ export const OrdersPage = () => {
     const { add, update, softDelete } = useFirestoreMutation('orders');
     const { update: updateCustomer } = useFirestoreMutation('customers');
     const { add: addLoyalty } = useFirestoreMutation('loyalty_ledger');
+    const { data: settings } = useFirestoreSubscription<SystemSettings>('settings');
 
     const [viewMode, setViewMode] = useState<'Kanban' | 'List'>('Kanban');
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [editingOrder, setEditingOrder] = useState<Order | null>(null);
     const [selectedMonth, setSelectedMonth] = useState(dayjs());
+
+    const loyaltySettings = settings[0];
+    const isLoyaltyEnabled = loyaltySettings ? loyaltySettings.loyaltyEnabled : true;
 
     const handleCreate = () => {
         setEditingOrder(null);
@@ -45,16 +49,28 @@ export const OrdersPage = () => {
                 payload.deliveredAt = new Date();
 
                 // Loyalty Points Logic
-                if (!order.pointsAwarded && order.customerId) {
-                    const pointsCost = getPointsCostForProduct(order.productNameAtSale);
-                    const quantityRedeemed = pointsCost > 0 ? Math.round((order.pointsRedeemed || 0) / pointsCost) : 0;
-                    const paidQuantity = Math.max(0, order.quantity - quantityRedeemed);
-
-                    const pointsEarned = calculateProductPoints(order.productNameAtSale, paidQuantity);
+                if (isLoyaltyEnabled && !order.pointsAwarded && order.customerId) {
+                    let pointsEarned = 0;
                     const pointsRedeemed = order.pointsRedeemed || 0;
+
+                    if (order.items && order.items.length > 0) {
+                        order.items.forEach(item => {
+                            const pCost = getPointsCostForProduct(item.productNameAtSale || '');
+                            const itemRedeemed = item.pointsRedeemed || 0;
+                            const qtyRedeemed = pCost > 0 ? Math.round(itemRedeemed / pCost) : 0;
+                            const paidQty = Math.max(0, (item.quantity || 1) - qtyRedeemed);
+                            pointsEarned += calculateProductPoints(item.productNameAtSale || '', paidQty);
+                        });
+                    } else {
+                        const pointsCost = getPointsCostForProduct(order.productNameAtSale || '');
+                        const quantityRedeemed = pointsCost > 0 ? Math.round((order.pointsRedeemed || 0) / pointsCost) : 0;
+                        const paidQuantity = Math.max(0, (order.quantity || 1) - quantityRedeemed);
+                        pointsEarned += calculateProductPoints(order.productNameAtSale || '', paidQuantity);
+                    }
+
                     const pointsChange = pointsEarned - pointsRedeemed;
 
-                    if (pointsChange !== 0) {
+                    if (pointsChange !== 0 || pointsEarned > 0 || pointsRedeemed > 0) {
                         payload.pointsEarned = pointsEarned;
                         payload.pointsAwarded = true;
 
@@ -62,27 +78,28 @@ export const OrdersPage = () => {
                             loyaltyPoints: increment(pointsChange)
                         });
 
-                        await addLoyalty({
-                            customerId: order.customerId,
-                            orderId: order.id,
-                            pointsChange: pointsChange,
-                            reason: 'purchase'
-                        });
+                        if (pointsEarned > 0) {
+                            await addLoyalty({
+                                customerId: order.customerId,
+                                orderId: order.id,
+                                pointsChange: pointsEarned,
+                                reason: 'purchase'
+                            });
+                        }
+
+                        if (pointsRedeemed > 0) {
+                            await addLoyalty({
+                                customerId: order.customerId,
+                                orderId: order.id,
+                                pointsChange: -pointsRedeemed,
+                                reason: 'redemption'
+                            });
+                        }
 
                         const currentCustomer = customers.find(c => c.id === order.customerId);
                         const newPoints = (currentCustomer?.loyaltyPoints || 0) + pointsChange;
                         if (newPoints >= LOYALTY_RULES.POINTS_FOR_FREE_BAMBINO) {
-                            let rewardText = '';
-                            if (newPoints >= LOYALTY_RULES.POINTS_FOR_FREE_GRANDE) {
-                                const qty = Math.floor(newPoints / LOYALTY_RULES.POINTS_FOR_FREE_GRANDE);
-                                rewardText = `${qty} Grande${qty > 1 ? 's' : ''}`;
-                            } else if (newPoints >= LOYALTY_RULES.POINTS_FOR_FREE_MEDIANO) {
-                                const qty = Math.floor(newPoints / LOYALTY_RULES.POINTS_FOR_FREE_MEDIANO);
-                                rewardText = `${qty} Mediano${qty > 1 ? 's' : ''}`;
-                            } else {
-                                const qty = Math.floor(newPoints / LOYALTY_RULES.POINTS_FOR_FREE_BAMBINO);
-                                rewardText = `${qty} Bambino${qty > 1 ? 's' : ''}`;
-                            }
+                            const rewardText = getLoyaltyRewardSummary(newPoints);
 
                             Modal.confirm({
                                 title: '¡Promoción de Lealtad!',

@@ -22,12 +22,21 @@ export const OrderSummary = ({ orders }: OrderSummaryProps) => {
         readyCount: ready.length,
         pendingCount: pendingPrep.length,
         bySize: pendingPrep.reduce((acc, order) => {
-            const name = (order.productNameAtSale || '').toLowerCase();
-            const qty = order.quantity || 1;
-            if (name.includes('bambino')) acc.chico += qty;
-            else if (name.includes('mediano')) acc.mediano += qty;
-            else if (name.includes('grande')) acc.grande += qty;
-            else acc.otro += qty;
+            const processItem = (name: string, qty: number) => {
+                const n = name.toLowerCase();
+                if (n.includes('bambino')) acc.chico += qty;
+                else if (n.includes('mediano')) acc.mediano += qty;
+                else if (n.includes('grande')) acc.grande += qty;
+                else acc.otro += qty;
+            };
+
+            if (order.items && order.items.length > 0) {
+                order.items.forEach(item => {
+                    processItem(item.productNameAtSale || '', item.quantity || 1);
+                });
+            } else {
+                processItem(order.productNameAtSale || '', order.quantity || 1);
+            }
             return acc;
         }, { chico: 0, mediano: 0, grande: 0, otro: 0 })
     };

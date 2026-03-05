@@ -95,10 +95,19 @@ export const DashboardPage = () => {
         // Product ranking
         const productCount: Record<string, { qty: number; revenue: number }> = {};
         deliveredOrders.forEach(o => {
-            const key = o.productNameAtSale || 'Sin Producto';
-            if (!productCount[key]) productCount[key] = { qty: 0, revenue: 0 };
-            productCount[key].qty += o.quantity;
-            productCount[key].revenue += o.total;
+            if (o.items && o.items.length > 0) {
+                o.items.forEach(item => {
+                    const key = item.productNameAtSale || 'Sin Producto';
+                    if (!productCount[key]) productCount[key] = { qty: 0, revenue: 0 };
+                    productCount[key].qty += item.quantity || 1;
+                    productCount[key].revenue += item.subtotal || 0;
+                });
+            } else {
+                const key = o.productNameAtSale || 'Sin Producto';
+                if (!productCount[key]) productCount[key] = { qty: 0, revenue: 0 };
+                productCount[key].qty += o.quantity || 1;
+                productCount[key].revenue += o.total || 0;
+            }
         });
         const topProducts = Object.entries(productCount)
             .map(([name, data]) => ({ name, ...data }))

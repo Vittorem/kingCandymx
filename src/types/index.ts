@@ -90,17 +90,34 @@ export const KANBAN_STATUSES: OrderStatus[] = [
     'Entregado',
 ];
 
-export interface Order extends BaseEntity {
-    customerId: string;
-    customerName?: string;
+export interface OrderItem {
+    id: string; // unique ID for the item row
     productId: string;
     productNameAtSale: string;
     flavorId: string;
     flavorNameAtSale: string;
-    channelId: string;
-
     quantity: number;
     unitPriceAtSale: number;
+    subtotal: number;
+    pointsRedeemed?: number; // Tracking points used for exactly this item
+}
+
+export interface Order extends BaseEntity {
+    customerId: string;
+    customerName?: string;
+
+    // Support for multiple products (Cart)
+    items?: OrderItem[];
+
+    // Legacy fields (for backwards compatibility with existing records before Cart system)
+    productId?: string;
+    productNameAtSale?: string;
+    flavorId?: string;
+    flavorNameAtSale?: string;
+    quantity?: number;
+    unitPriceAtSale?: number;
+
+    channelId: string;
 
     deliveryDate: Timestamp;
     deliveryMethod: 'Recoge' | 'Envío';
@@ -169,3 +186,8 @@ export interface LoyaltyLedger extends BaseEntity {
     reason: 'purchase' | 'redemption' | 'manual_adjustment';
 }
 
+// --- System Settings ---
+export interface SystemSettings extends BaseEntity {
+    id: 'loyalty_config'; // enforced ID for the singleton document
+    loyaltyEnabled: boolean;
+}

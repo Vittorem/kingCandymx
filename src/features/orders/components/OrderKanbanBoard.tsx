@@ -42,7 +42,18 @@ function SortableItem({ order, onClick }: { order: Order; onClick: () => void })
                     <Tag color="blue">${order.total}</Tag>
                 </div>
                 <div style={{ fontSize: 12, color: '#666' }}>
-                    {order.productNameAtSale} ({order.flavorNameAtSale}) x {order.quantity}
+                    {order.items && order.items.length > 0 ? (
+                        order.items.map((item, i) => (
+                            <div key={item.id || i}>
+                                {item.quantity}x {item.productNameAtSale} ({item.flavorNameAtSale})
+                                {item.pointsRedeemed ? ' 🎁' : ''}
+                            </div>
+                        ))
+                    ) : (
+                        <div>
+                            {order.quantity}x {order.productNameAtSale} ({order.flavorNameAtSale})
+                        </div>
+                    )}
                 </div>
                 <div style={{ fontSize: 11, color: '#999', marginTop: 4 }}>
                     {dateStr}

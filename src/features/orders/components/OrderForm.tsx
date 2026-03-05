@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
-import { Drawer, Form, Select, DatePicker, InputNumber, Radio, Divider, Input, Button, Space, Typography, Row, Col, Switch, Alert } from 'antd';
+import { Drawer, Form, Select, DatePicker, InputNumber, Radio, Divider, Input, Button, Space, Typography, Row, Col, Alert, Checkbox } from 'antd';
+import { PlusOutlined, DeleteOutlined } from '@ant-design/icons';
 import { useFirestoreSubscription } from '../../../hooks/useFirestore';
-import { Customer, Product, Flavor, Channel, Order, ORDER_STATUSES } from '../../../types';
-import { calculateMaxRedeemableProducts, calculatePointsCost, getPointsCostForProduct } from '../../../utils/loyalty';
+import { Customer, Product, Flavor, Channel, Order, ORDER_STATUSES, OrderItem, SystemSettings } from '../../../types';
+import { getPointsCostForProduct } from '../../../utils/loyalty';
 import dayjs from 'dayjs';
 
 interface OrderFormProps {
@@ -20,22 +21,32 @@ const { TextArea } = Input;
 export const OrderForm = ({ open, onClose, onSubmit, initialValues, loading }: OrderFormProps) => {
     const [form] = Form.useForm();
 
-    // Catalogs
+    // Catalogs & Data
     const { data: customers } = useFirestoreSubscription<Customer>('customers');
     const { data: products } = useFirestoreSubscription<Product>('catalog_products');
     const { data: flavors } = useFirestoreSubscription<Flavor>('catalog_flavors');
     const { data: channels } = useFirestoreSubscription<Channel>('catalog_channels');
+    const { data: orders } = useFirestoreSubscription<Order>('orders');
+    const { data: settings } = useFirestoreSubscription<SystemSettings>('settings');
+
+    const loyaltySettings = settings[0];
+    const isLoyaltyEnabled = loyaltySettings ? loyaltySettings.loyaltyEnabled : true;
 
     // Local state for calculations
-    const [totals, setTotals] = useState({ subtotal: 0, discount: 0, total: 0 });
+    const [totals, setTotals] = useState({ subtotal: 0, discount: 0, total: 0, qty: 0 });
     const [loyaltyDiscount, setLoyaltyDiscount] = useState(0);
+    const [loyaltyError, setLoyaltyError] = useState<string | null>(null);
 
     const currentCustomer = customers.find(c => c.id === form.getFieldValue('customerId'));
-    const currentProduct = products.find(p => p.id === form.getFieldValue('productId'));
-    const productName = currentProduct?.name || '';
-    const pointsCost = getPointsCostForProduct(productName);
-    const availablePoints = currentCustomer?.loyaltyPoints || 0;
-    const canRedeem = pointsCost > 0 && availablePoints >= pointsCost;
+    const availablePointsRaw = currentCustomer?.loyaltyPoints || 0;
+
+    // Calculate frozen points from other pending orders
+    const orderId = initialValues?.id || null;
+    const pendingRedemptions = orders
+        .filter(o => o.customerId === currentCustomer?.id && !['Entregado', 'Cancelado'].includes(o.status) && o.id !== orderId)
+        .reduce((acc, o) => acc + (o.pointsRedeemed || 0), 0);
+
+    const effectiveAvailablePoints = Math.max(0, availablePointsRaw - pendingRedemptions);
 
     useEffect(() => {
         if (open) {
@@ -44,65 +55,142 @@ export const OrderForm = ({ open, onClose, onSubmit, initialValues, loading }: O
                 const deliveryDate = initialValues.deliveryDate
                     ? dayjs(initialValues.deliveryDate.toDate())
                     : null;
-                form.setFieldsValue({ ...initialValues, deliveryDate });
-                calculateTotals(initialValues as unknown as Record<string, unknown>);
+
+                // Backwards compatibility for old orders without items payload
+                let initialItems = initialValues.items || [];
+                if (initialItems.length === 0 && initialValues.productId) {
+                    initialItems = [{
+                        id: Date.now().toString(),
+                        productId: initialValues.productId,
+                        productNameAtSale: initialValues.productNameAtSale || '',
+                        flavorId: initialValues.flavorId || '',
+                        flavorNameAtSale: initialValues.flavorNameAtSale || '',
+                        quantity: initialValues.quantity || 1,
+                        unitPriceAtSale: initialValues.unitPriceAtSale || 0,
+                        subtotal: (initialValues.quantity || 1) * (initialValues.unitPriceAtSale || 0),
+                        pointsRedeemed: initialValues.pointsRedeemed || 0,
+                        redeemLoyalty: (initialValues.pointsRedeemed || 0) > 0
+                    } as any];
+                }
+
+                form.setFieldsValue({
+                    ...initialValues,
+                    deliveryDate,
+                    items: initialItems,
+                });
+                calculateTotals(form.getFieldsValue());
             } else {
                 form.setFieldsValue({
                     status: 'Pendiente',
-                    quantity: 1,
+                    items: [{ quantity: 1, unitPriceAtSale: 0, redeemLoyalty: false }],
                     shippingCost: 0,
                     discountValue: 0,
                     extraCharges: 0,
                     deliveryMethod: 'Recoge',
                     discountType: 'AMOUNT',
                     deliveryDate: dayjs(),
-                    redeemLoyalty: false
                 });
             }
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [open, initialValues, form]);
 
-    const handleProductChange = (productId: string) => {
-        const product = products.find(p => p.id === productId);
-        if (product) {
-            form.setFieldsValue({
-                productNameAtSale: product.name,
-                unitPriceAtSale: product.price,
-            });
-            calculateTotals(form.getFieldsValue());
-        }
-    };
-
-    const calculateTotals = (values: Record<string, unknown>) => {
-        const qty = (values.quantity as number) || 0;
-        const price = (values.unitPriceAtSale as number) || 0;
+    const calculateTotals = (values: Record<string, any>) => {
+        const items = values.items || [];
         const shipping = (values.shippingCost as number) || 0;
         const extra = (values.extraCharges as number) || 0;
         const discountVal = (values.discountValue as number) || 0;
         const discountType = (values.discountType as string) || 'AMOUNT';
 
-        const subtotal = qty * price;
+        let subtotal = 0;
+        let totalQty = 0;
+
+        // Sum basic subtotals
+        items.forEach((item: any) => {
+            const qty = (item?.quantity as number) || 0;
+            const price = (item?.unitPriceAtSale as number) || 0;
+            subtotal += qty * price;
+            totalQty += qty;
+        });
+
         const discountAmount = discountType === 'PERCENT'
             ? (subtotal * discountVal) / 100
             : discountVal;
 
-        const redeemLoyalty = values.redeemLoyalty as boolean;
+        // Apply loyalty redemptions per item checkboxes
         let pLoyaltyDiscount = 0;
-        const currentSelectedProduct = products.find(p => p.id === values.productId);
-        const pName = currentSelectedProduct?.name || '';
+        let pointsUsedPool = 0;
+        let totalRedeemedQty = 0;
+        let pointsLeft = effectiveAvailablePoints;
+        let pLoyaltyError = null;
 
-        if (redeemLoyalty && getPointsCostForProduct(pName) > 0) {
-            const maxFreeByPoints = calculateMaxRedeemableProducts(pName, availablePoints);
-            // The logic: You can only redeem products IF the total quantity is STRICTLY GREATER than the free units.
-            // E.g. Buy 2, get 1 free (qty 2, maxFree 1 => freeUnits 1). Buy 1, get 1 free (qty 1, maxFree 1 => freeUnits 0).
-            const allowedFreeUnits = Math.min(qty - 1, maxFreeByPoints);
-            const freeUnits = Math.max(0, allowedFreeUnits);
-            pLoyaltyDiscount = freeUnits * price;
+        const maxAllowedFreeUnits = totalQty - 1;
+
+        items.forEach((item: any) => {
+            const qty = (item?.quantity as number) || 0;
+            const price = (item?.unitPriceAtSale as number) || 0;
+            const pId = item?.productId;
+            const wantsRedeem = item?.redeemLoyalty;
+
+            item._calculatedRedeemedQty = 0;
+            item._calculatedPointsUsed = 0;
+
+            if (isLoyaltyEnabled && wantsRedeem && pId) {
+                const prod = products.find(p => p.id === pId);
+                const pName = prod?.name || '';
+                const pCost = getPointsCostForProduct(pName);
+
+                if (pCost > 0) {
+                    const affordableFree = Math.floor(pointsLeft / pCost);
+                    const remainingFreeAllowed = Math.max(0, maxAllowedFreeUnits - totalRedeemedQty);
+                    const maxFree = Math.min(qty, affordableFree, remainingFreeAllowed);
+
+                    if (maxFree > 0) {
+                        pLoyaltyDiscount += (maxFree * price);
+                        pointsUsedPool += (maxFree * pCost);
+                        totalRedeemedQty += maxFree;
+                        pointsLeft -= (maxFree * pCost);
+
+                        item._calculatedRedeemedQty = maxFree;
+                        item._calculatedPointsUsed = maxFree * pCost;
+                    }
+
+                    if (maxFree === 0) {
+                        pLoyaltyError = 'Se alcanzó el límite (faltan puntos o productos pagados) para algunas de tus selecciones.';
+                    }
+                } else {
+                    pLoyaltyError = 'Seleccionaste redimir un producto que no es elegible.';
+                }
+            }
+        });
+
+        if (pLoyaltyError) {
+            pLoyaltyDiscount = 0;
+            pointsUsedPool = 0;
+            items.forEach((item: any) => {
+                item._calculatedPointsUsed = 0;
+                item._calculatedRedeemedQty = 0;
+            });
         }
 
         const total = subtotal + shipping + extra - discountAmount - pLoyaltyDiscount;
         setLoyaltyDiscount(pLoyaltyDiscount);
-        setTotals({ subtotal, discount: discountAmount, total });
+        setLoyaltyError(pLoyaltyError);
+        setTotals({ subtotal, discount: discountAmount, total, qty: totalQty });
+    };
+
+    const handleProductChange = (val: string, index: number) => {
+        const prod = products.find(p => p.id === val);
+        if (prod) {
+            const items = form.getFieldValue('items') || [];
+            items[index] = {
+                ...items[index],
+                productNameAtSale: prod.name,
+                unitPriceAtSale: prod.price
+            };
+            form.setFieldsValue({ items });
+            calculateTotals(form.getFieldsValue());
+        }
     };
 
     const onValuesChange = (_: unknown, allValues: Record<string, unknown>) => {
@@ -113,22 +201,49 @@ export const OrderForm = ({ open, onClose, onSubmit, initialValues, loading }: O
         try {
             const values = await form.validateFields();
             const customer = customers.find(c => c.id === values.customerId);
-            const flavor = flavors.find(f => f.id === values.flavorId);
+
+            const items = values.items || [];
+            let totalPointsRedeemed = 0;
+
+            const structuredItems: OrderItem[] = items.map((item: any, i: number) => {
+                const pId = item.productId;
+                const fId = item.flavorId;
+                const prod = products.find(p => p.id === pId);
+                const flav = flavors.find(f => f.id === fId);
+
+                const usesPoints = item._calculatedPointsUsed || 0;
+                totalPointsRedeemed += usesPoints;
+
+                return {
+                    id: Date.now().toString() + i,
+                    productId: pId,
+                    productNameAtSale: prod?.name || item.productNameAtSale || 'Desconocido',
+                    flavorId: fId,
+                    flavorNameAtSale: flav?.name || item.flavorNameAtSale || 'Desconocido',
+                    quantity: item.quantity || 1,
+                    unitPriceAtSale: item.unitPriceAtSale || 0,
+                    subtotal: (item.quantity || 1) * (item.unitPriceAtSale || 0),
+                    pointsRedeemed: usesPoints,
+                    redeemLoyalty: (item._calculatedPointsUsed || 0) > 0 // Help populate UI checkboxes if editing later
+                };
+            });
 
             const payload: Partial<Order> = {
                 ...values,
                 customerName: customer?.fullName || 'Desconocido',
-                flavorNameAtSale: flavor?.name || 'Desconocido',
                 deliveryDate: values.deliveryDate.toDate(),
-                pointsRedeemed: values.redeemLoyalty && loyaltyDiscount > 0
-                    ? calculatePointsCost(values.productNameAtSale as string || '', Math.round(loyaltyDiscount / (values.unitPriceAtSale || 1)))
-                    : 0,
+                items: structuredItems,
+                productId: structuredItems[0]?.productId || '',
+                productNameAtSale: structuredItems[0]?.productNameAtSale || '',
+                flavorId: structuredItems[0]?.flavorId || '',
+                flavorNameAtSale: structuredItems[0]?.flavorNameAtSale || '',
+                quantity: structuredItems.reduce((acc, curr) => acc + curr.quantity, 0),
+                unitPriceAtSale: structuredItems[0]?.unitPriceAtSale || 0,
+                pointsRedeemed: totalPointsRedeemed,
                 subtotal: totals.subtotal,
                 discountAmount: totals.discount,
                 total: totals.total,
             };
-
-            delete (payload as Record<string, unknown>).redeemLoyalty;
 
             await onSubmit(payload);
             onClose();
@@ -146,7 +261,7 @@ export const OrderForm = ({ open, onClose, onSubmit, initialValues, loading }: O
             extra={
                 <Space>
                     <Button onClick={onClose}>Cancelar</Button>
-                    <Button type="primary" onClick={handleFinish} loading={loading}>Guardar</Button>
+                    <Button type="primary" onClick={handleFinish} loading={loading} disabled={!!loyaltyError}>Guardar</Button>
                 </Space>
             }
         >
@@ -172,73 +287,114 @@ export const OrderForm = ({ open, onClose, onSubmit, initialValues, loading }: O
                     </Col>
                 </Row>
 
-                {currentCustomer && availablePoints > 0 && (
+                {isLoyaltyEnabled && currentCustomer && availablePointsRaw > 0 && (
                     <div style={{ marginBottom: 16 }}>
                         <Alert
-                            message={`Este cliente tiene ${availablePoints} puntos de lealtad.`}
-                            description="Recuerda: Solo se puede redimir un producto gratis si en este pedido se está pagando al menos 1 producto adicional."
-                            type="info"
-                            showIcon
-                            action={
-                                pointsCost === 0 ? (
-                                    <Text type="secondary" style={{ fontSize: 12 }}>No aplica para este producto</Text>
-                                ) : (form.getFieldValue('quantity') || 1) <= calculateMaxRedeemableProducts(form.getFieldValue('productNameAtSale') || '', availablePoints) ? (
-                                    <Text type="danger" style={{ fontSize: 12, fontWeight: 'bold' }}>
-                                        Requiere comprar 1 artículo más para poder redimir el saldo.
-                                    </Text>
-                                ) : canRedeem ? (
-                                    <Form.Item name="redeemLoyalty" valuePropName="checked" style={{ margin: 0 }}>
-                                        <Switch checkedChildren="Redimir" unCheckedChildren="No usar" />
-                                    </Form.Item>
-                                ) : (
-                                    <Text type="secondary" style={{ fontSize: 12 }}>
-                                        Requiere {pointsCost} pts para este producto
-                                    </Text>
-                                )
+                            message={`Puntos de Lealtad (Total: ${availablePointsRaw})`}
+                            description={
+                                <div>
+                                    {pendingRedemptions > 0 && <div style={{ marginBottom: 4 }}>Puntos comprometidos en pedidos pendientes: <strong style={{ color: 'red' }}>{pendingRedemptions}</strong></div>}
+                                    <div style={{ marginBottom: 4 }}>Puntos completamente libres (Efectivos): <strong>{effectiveAvailablePoints}</strong></div>
+                                    {loyaltyError && <div style={{ color: 'red', marginTop: 8, fontWeight: 'bold' }}>{loyaltyError}</div>}
+                                </div>
                             }
+                            type={loyaltyError ? "error" : "info"}
+                            showIcon
                         />
                     </div>
                 )}
 
-                <Divider orientation="left">Producto</Divider>
+                <Divider orientation="left">Carrito de Productos</Divider>
+
+                <Form.List name="items">
+                    {(fields, { add, remove }) => (
+                        <>
+                            {fields.map(({ key, name, ...restField }, index) => (
+                                <div key={key} style={{ background: '#fafafa', padding: '16px 16px 0', marginBottom: 16, borderRadius: 8, border: '1px solid #f0f0f0', position: 'relative' }}>
+                                    <Row gutter={16}>
+                                        <Col span={8}>
+                                            <Form.Item {...restField} name={[name, 'productId']} label="Producto" rules={[{ required: true }]}>
+                                                <Select onChange={(val) => handleProductChange(val, index)} placeholder="Producto">
+                                                    {products.filter(p => p.isActive).map(p => (
+                                                        <Option key={p.id} value={p.id}>{p.name} (${p.price})</Option>
+                                                    ))}
+                                                </Select>
+                                            </Form.Item>
+                                            <Form.Item {...restField} name={[name, 'productNameAtSale']} hidden><Input /></Form.Item>
+                                        </Col>
+                                        <Col span={8}>
+                                            <Form.Item {...restField} name={[name, 'flavorId']} label="Sabor" rules={[{ required: true }]}>
+                                                <Select placeholder="Sabor">
+                                                    {flavors.filter(f => f.isActive).map(f => (
+                                                        <Option key={f.id} value={f.id}>{f.name}</Option>
+                                                    ))}
+                                                </Select>
+                                            </Form.Item>
+                                            <Form.Item {...restField} name={[name, 'flavorNameAtSale']} hidden><Input /></Form.Item>
+                                        </Col>
+                                        <Col span={8}>
+                                            <Form.Item {...restField} name={[name, 'quantity']} label="Cantidad" rules={[{ required: true }]}>
+                                                <InputNumber min={1} style={{ width: '100%' }} />
+                                            </Form.Item>
+                                        </Col>
+                                    </Row>
+                                    <Row gutter={16}>
+                                        <Col span={8}>
+                                            <Form.Item {...restField} name={[name, 'unitPriceAtSale']} label="Precio Unitario">
+                                                <InputNumber prefix="$" style={{ width: '100%' }} />
+                                            </Form.Item>
+                                        </Col>
+                                        <Col span={8}>
+                                            {(() => {
+                                                if (!isLoyaltyEnabled) return null;
+                                                const pId = form.getFieldValue(['items', name, 'productId']);
+                                                if (!pId || !currentCustomer) return null;
+
+                                                const pName = products.find(p => p.id === pId)?.name || '';
+                                                const pCost = getPointsCostForProduct(pName);
+
+                                                if (pCost > 0) {
+                                                    if (effectiveAvailablePoints >= pCost) {
+                                                        return (
+                                                            <div style={{ marginTop: 32 }}>
+                                                                <Form.Item {...restField} name={[name, 'redeemLoyalty']} valuePropName="checked" style={{ margin: 0 }}>
+                                                                    <Checkbox>Redimir grátis ({pCost} pts)</Checkbox>
+                                                                </Form.Item>
+                                                            </div>
+                                                        );
+                                                    } else {
+                                                        return <div style={{ marginTop: 32 }}><Text type="secondary" style={{ fontSize: 13 }}>Requiere {pCost} pts</Text></div>;
+                                                    }
+                                                }
+
+                                                return null;
+                                            })()}
+                                        </Col>
+                                        <Col span={8}>
+                                            {fields.length > 1 && (
+                                                <div style={{ textAlign: 'right', marginTop: 32 }}>
+                                                    <Button danger type="text" icon={<DeleteOutlined />} onClick={() => remove(name)}>
+                                                        Remover
+                                                    </Button>
+                                                </div>
+                                            )}
+                                        </Col>
+                                    </Row>
+                                </div>
+                            ))}
+                            <Form.Item>
+                                <Button type="dashed" onClick={() => add({ quantity: 1, unitPriceAtSale: 0, redeemLoyalty: false })} block icon={<PlusOutlined />}>
+                                    Añadir otro producto al carrito
+                                </Button>
+                            </Form.Item>
+                        </>
+                    )}
+                </Form.List>
 
                 <Row gutter={16}>
-                    <Col span={8}>
-                        <Form.Item name="productId" label="Producto" rules={[{ required: true }]}>
-                            <Select onChange={handleProductChange} placeholder="Producto">
-                                {products.filter(p => p.isActive).map(p => (
-                                    <Option key={p.id} value={p.id}>{p.name} (${p.price})</Option>
-                                ))}
-                            </Select>
-                        </Form.Item>
-                        <Form.Item name="productNameAtSale" hidden><Input /></Form.Item>
-                    </Col>
-                    <Col span={8}>
-                        <Form.Item name="flavorId" label="Sabor" rules={[{ required: true }]}>
-                            <Select placeholder="Sabor">
-                                {flavors.filter(f => f.isActive).map(f => (
-                                    <Option key={f.id} value={f.id}>{f.name}</Option>
-                                ))}
-                            </Select>
-                        </Form.Item>
-                        <Form.Item name="flavorNameAtSale" hidden><Input /></Form.Item>
-                    </Col>
-                    <Col span={8}>
-                        <Form.Item name="quantity" label="Cantidad" rules={[{ required: true }]}>
-                            <InputNumber min={1} style={{ width: '100%' }} />
-                        </Form.Item>
-                    </Col>
-                </Row>
-
-                <Row gutter={16}>
-                    <Col span={12}>
-                        <Form.Item name="unitPriceAtSale" label="Precio Unitario (Congelado)">
-                            <InputNumber prefix="$" style={{ width: '100%' }} />
-                        </Form.Item>
-                    </Col>
-                    <Col span={12}>
-                        <div style={{ padding: '24px 0', textAlign: 'right' }}>
-                            <Text strong>Subtotal: ${totals.subtotal.toFixed(2)}</Text>
+                    <Col span={24}>
+                        <div style={{ padding: '0 0 24px', textAlign: 'right' }}>
+                            <Text strong>Subtotal Bruto: ${totals.subtotal.toFixed(2)}</Text>
                         </div>
                     </Col>
                 </Row>
@@ -282,7 +438,7 @@ export const OrderForm = ({ open, onClose, onSubmit, initialValues, loading }: O
                     </Col>
                     <Col span={8}>
                         <div style={{ padding: '30px 0', color: 'red' }}>
-                            Descuento: -${totals.discount.toFixed(2)}
+                            Descuento Final: -${totals.discount.toFixed(2)}
                             {loyaltyDiscount > 0 && <span style={{ display: 'block' }}>Lealtad: -${loyaltyDiscount.toFixed(2)}</span>}
                         </div>
                     </Col>
