@@ -73,7 +73,7 @@ export const AuthGate = ({ children }: AuthGateProps) => {
         return (
             <Layout style={{ minHeight: '100vh', background: '#f0f2f5' }}>
                 <Content style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                    <Card style={{ width: 400, textAlign: 'center', borderRadius: 8, boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
+                    <Card style={{ width: '100%', maxWidth: 400, textAlign: 'center', borderRadius: 8, boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
                         <Title level={2} style={{ marginBottom: 8 }}>Tiramisú CRM</Title>
                         <Text type="secondary" style={{ display: 'block', marginBottom: 24 }}>Sistema de Gestión y Pedidos</Text>
                         <Button
