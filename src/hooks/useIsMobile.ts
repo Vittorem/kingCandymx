@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 
-export const useIsMobile = (breakpoint: number = 768) => {
+export const useIsMobile = (breakpoint: number = 992) => {
     const isMobileDevice = () => {
         if (typeof window === 'undefined' || typeof navigator === 'undefined') return false;
 
-        const hasMobileUA = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        const hasMobileUA = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile|Phone|HarmonyOS/i.test(navigator.userAgent);
         const hasMobileWidth = window.innerWidth < breakpoint;
         // User agent es la verdad absoluta para celulares físicos, innerWidth aporta soporte responsivo en web desktop.
         return hasMobileUA || hasMobileWidth;
