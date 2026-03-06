@@ -62,7 +62,7 @@ export const AppLayout = () => {
     };
 
     return (
-        <Layout style={{ minHeight: '100vh', paddingBottom: isMobile ? 65 : 0 }}>
+        <Layout style={{ minHeight: '100vh', paddingBottom: isMobile ? 65 : 0, maxWidth: '100vw', overflowX: 'hidden' }}>
             {!isMobile && (
                 <Sider trigger={null} collapsible collapsed={collapsed} breakpoint="md" onBreakpoint={setCollapsed}
                     style={{ position: 'sticky', top: 0, height: '100vh' }}>
