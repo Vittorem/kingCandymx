@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Button, Segmented, message, DatePicker, Modal } from 'antd';
+import { Button, Segmented, message, DatePicker, Modal, Skeleton } from 'antd';
 import { PlusOutlined, UnorderedListOutlined, AppstoreOutlined } from '@ant-design/icons';
 import { useFirestoreSubscription, useFirestoreMutation } from '../../hooks/useFirestore';
 import { Order, OrderStatus, Customer, SystemSettings } from '../../types';
@@ -15,8 +15,8 @@ import { useIsMobile } from '../../hooks/useIsMobile';
 
 
 export const OrdersPage = () => {
-    const { data: orders } = useFirestoreSubscription<Order>('orders');
-    const { data: customers } = useFirestoreSubscription<Customer>('customers');
+    const { data: orders, loading: loadingOrders } = useFirestoreSubscription<Order>('orders');
+    const { data: customers, loading: loadingCustomers } = useFirestoreSubscription<Customer>('customers');
     const { add, update, softDelete } = useFirestoreMutation('orders');
     const { update: updateCustomer } = useFirestoreMutation('customers');
     const { add: addLoyalty } = useFirestoreMutation('loyalty_ledger');
@@ -115,7 +115,7 @@ export const OrdersPage = () => {
                                         const firstName = currentCustomer.fullName.split(' ')[0] || currentCustomer.fullName;
                                         const msg = `Hola ${firstName}, gracias por comprar en King Candy La Casa Del Tiramisu, tu compra acumulo ${pointsChange} puntos de lealtad, ahora tienes ${newPoints} puntos acumulados. Comunicate con nosotros para saber como redimirlos.`;
                                         const url = `https://wa.me/52${phoneStr}?text=${encodeURIComponent(msg)}`;
-                                        window.open(url, '_blank');
+                                        window.open(url, '_blank', 'noopener,noreferrer');
                                     } else {
                                         message.warning('El cliente no tiene teléfono registrado.');
                                     }
@@ -127,6 +127,7 @@ export const OrdersPage = () => {
             }
             await update(orderId, payload);
             message.success(`Estado actualizado a ${newStatus}`);
+            if (navigator.vibrate) navigator.vibrate(50);
         } catch (e) {
             console.error('Error al actualizar estado:', e);
             message.error('Error al actualizar estado');
@@ -142,6 +143,7 @@ export const OrdersPage = () => {
                 await add(values);
                 message.success('Pedido creado');
             }
+            if (navigator.vibrate) navigator.vibrate(50);
         } catch {
             message.error('Error al guardar pedido');
         }
@@ -150,6 +152,7 @@ export const OrdersPage = () => {
     const handleDelete = async (id: string) => {
         await softDelete(id);
         message.success('Pedido eliminado');
+        if (navigator.vibrate) navigator.vibrate(50);
     };
 
     const filteredOrders = orders.filter(o => {
@@ -194,7 +197,9 @@ export const OrdersPage = () => {
                 <OrderSummary orders={filteredOrders} />
             </div>
 
-            {viewMode === 'Kanban' && !isMobile ? (
+            {loadingOrders || loadingCustomers ? (
+                <div style={{ padding: 24 }}><Skeleton active paragraph={{ rows: 8 }} /></div>
+            ) : viewMode === 'Kanban' && !isMobile ? (
                 <OrderKanbanBoard
                     orders={filteredOrders}
                     onStatusChange={handleStatusChange}
@@ -205,6 +210,7 @@ export const OrdersPage = () => {
                     orders={filteredOrders}
                     onEdit={handleEdit}
                     onDelete={handleDelete}
+                    onStatusChange={handleStatusChange}
                 />
             )}
 

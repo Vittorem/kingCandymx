@@ -4,7 +4,7 @@ import { getOrderDate } from './dateHelpers';
 /**
  * Temporal analysis result
  */
-export interface TemporalAnalysisResult {
+interface TemporalAnalysisResult {
     byDay: { name: string; orders: number; revenue: number }[];
     byHour: { hour: string; orders: number }[];
     peakDay: string;

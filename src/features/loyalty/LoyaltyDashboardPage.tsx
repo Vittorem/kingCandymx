@@ -104,7 +104,7 @@ export const LoyaltyDashboardPage = () => {
         }
 
         const url = `https://wa.me/52${phoneStr}?text=${encodeURIComponent(msg)}`;
-        window.open(url, '_blank');
+        window.open(url, '_blank', 'noopener,noreferrer');
     };
 
     const columns = [

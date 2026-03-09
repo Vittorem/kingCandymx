@@ -31,16 +31,6 @@ export const getPointsCostForProduct = (productName: string): number => {
     return 0;
 };
 
-export const calculateMaxRedeemableProducts = (productName: string, loyaltyPoints: number = 0): number => {
-    const cost = getPointsCostForProduct(productName);
-    if (cost === 0) return 0;
-    return Math.floor(loyaltyPoints / cost);
-};
-
-export const calculatePointsCost = (productName: string, quantityRedeemed: number): number => {
-    return quantityRedeemed * getPointsCostForProduct(productName);
-};
-
 export const getLoyaltyRewardSummary = (points: number): string => {
     if (points >= LOYALTY_RULES.POINTS_FOR_FREE_GRANDE) {
         const qty = Math.floor(points / LOYALTY_RULES.POINTS_FOR_FREE_GRANDE);

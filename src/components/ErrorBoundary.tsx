@@ -34,7 +34,7 @@ export class ErrorBoundary extends Component<Props, State> {
                 <Result
                     status="error"
                     title="Algo salió mal"
-                    subTitle={this.state.error?.message || 'Error inesperado'}
+                    subTitle="Ha ocurrido un error inesperado. Por favor, intenta de nuevo o contacta a soporte."
                     extra={
                         <Button type="primary" onClick={this.handleReset}>
                             Reintentar

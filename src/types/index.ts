@@ -10,13 +10,6 @@ export interface BaseEntity {
     deletedAt?: Timestamp;
 }
 
-export interface UserProfile {
-    uid: string;
-    email: string | null;
-    displayName: string | null;
-    photoURL: string | null;
-}
-
 // --- Catalogs ---
 
 export interface Product extends BaseEntity {
@@ -159,23 +152,26 @@ export interface InventoryItem extends BaseEntity {
     isActive: boolean;
 }
 
-export interface InventoryMovement extends BaseEntity {
-    itemId: string;
-    itemName: string;
-    type: 'IN' | 'OUT' | 'ADJUST';
-    quantityPackages: number;
-    date: Timestamp;
-    note?: string;
+
+
+// --- Recetario y Costos ---
+export interface Ingredient extends BaseEntity {
+    name: string;
+    unit: string; // ej. 'g', 'ml', 'pieza'
+    cost_unit: number; // Costo por unidad en MXN
 }
 
-// --- Recipes ---
+export interface RecipeIngredient {
+    ingredientId: string;
+    qty: number;
+    unit: string;
+}
+
 export interface Recipe extends BaseEntity {
-    productId: string;
-    yieldUnits: number;
-    ingredients: {
-        itemId: string;
-        qtyPackages: number;
-    }[];
+    name: string;
+    servings_default: number;
+    is_variant: boolean;
+    ingredients: RecipeIngredient[];
 }
 
 // --- Loyalty System ---

@@ -1,5 +1,5 @@
 import { useState, ReactNode } from 'react';
-import { Table, Button, Modal, Form, Switch, Space, Popconfirm, message } from 'antd';
+import { Table, Button, Drawer, Form, Switch, Space, Popconfirm, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { EditOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import { useFirestoreSubscription, useFirestoreMutation } from '../../../hooks/useFirestore';
@@ -23,6 +23,7 @@ export function CatalogTable<T extends BaseEntity & { isActive: boolean }>({
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [editingItem, setEditingItem] = useState<T | null>(null);
     const [form] = Form.useForm();
+    const isMobile = window.innerWidth < 768; // Quick check for mobile
 
     const handleAdd = () => {
         setEditingItem(null);
@@ -107,12 +108,20 @@ export function CatalogTable<T extends BaseEntity & { isActive: boolean }>({
                 pagination={{ pageSize: 10 }}
             />
 
-            <Modal
+            <Drawer
                 title={editingItem ? `Editar ${title}` : `Nuevo ${title}`}
                 open={isModalVisible}
-                onOk={handleOk}
-                onCancel={() => setIsModalVisible(false)}
+                onClose={() => setIsModalVisible(false)}
                 destroyOnClose
+                placement={isMobile ? 'bottom' : 'right'}
+                width={isMobile ? '100%' : 500}
+                height={isMobile ? '90vh' : '100%'}
+                extra={
+                    <Space>
+                        <Button onClick={() => setIsModalVisible(false)}>Cancelar</Button>
+                        <Button type="primary" onClick={handleOk}>Guardar</Button>
+                    </Space>
+                }
             >
                 <Form form={form} layout="vertical">
                     {renderFormFields()}
@@ -120,7 +129,7 @@ export function CatalogTable<T extends BaseEntity & { isActive: boolean }>({
                         <Switch />
                     </Form.Item>
                 </Form>
-            </Modal>
+            </Drawer>
         </div>
     );
 }

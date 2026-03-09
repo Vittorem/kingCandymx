@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Table, Button, Modal, Form, Input, InputNumber, Select, Tag, Space, message, Card, Tabs, List as AntList, Typography, Divider, Row, Col } from 'antd';
+import { Table, Button, Drawer, Form, Input, InputNumber, Select, Tag, Space, message, Card, Tabs, List as AntList, Typography, Divider, Row, Col, Skeleton } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, ArrowUpOutlined, ArrowDownOutlined, CalculatorOutlined } from '@ant-design/icons';
 import { useFirestoreSubscription, useFirestoreMutation } from '../../hooks/useFirestore';
 import { InventoryItem, Order } from '../../types';
@@ -120,7 +120,7 @@ function PlanningCalculator({ items, orders }: { items: InventoryItem[]; orders:
 // ─── Main Page ───────────────────────────────────────────────────────────────
 
 export const InventoryPage = () => {
-    const { data: items } = useFirestoreSubscription<InventoryItem>('inventory');
+    const { data: items, loading } = useFirestoreSubscription<InventoryItem>('inventory');
     const { data: orders } = useFirestoreSubscription<Order>('orders');
     const { add, update, softDelete } = useFirestoreMutation('inventory');
     const movementsMutation = useFirestoreMutation('inventory_movements');
@@ -159,6 +159,7 @@ export const InventoryPage = () => {
                 await add(values);
                 message.success('Item creado');
             }
+            if (navigator.vibrate) navigator.vibrate(50);
             setIsItemModalOpen(false);
         } catch {
             message.error('Error al guardar');
@@ -168,6 +169,7 @@ export const InventoryPage = () => {
     const handleDeleteItem = async (id: string) => {
         await softDelete(id);
         message.success('Item eliminado');
+        if (navigator.vibrate) navigator.vibrate(50);
     };
 
     // ─── Movement Handlers ──────────────────────────────────────────
@@ -202,6 +204,7 @@ export const InventoryPage = () => {
             });
 
             message.success(`Movimiento registrado. Stock: ${newStock}`);
+            if (navigator.vibrate) navigator.vibrate(50);
             setIsMovementModalOpen(false);
         } catch {
             message.error('Error al registrar movimiento');
@@ -214,7 +217,9 @@ export const InventoryPage = () => {
         {
             key: 'items',
             label: 'Inventario',
-            children: (
+            children: loading ? (
+                <div style={{ padding: 24 }}><Skeleton active paragraph={{ rows: 6 }} /></div>
+            ) : (
                 <>
                     <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
                         <Button type="primary" icon={<PlusOutlined />} onClick={handleAddItem}>
@@ -247,12 +252,20 @@ export const InventoryPage = () => {
             <Tabs items={tabItems} size={isMobile ? "small" : "middle"} />
 
             {/* New/Edit Item Modal */}
-            <Modal
+            <Drawer
                 title={editingItem ? 'Editar Item' : 'Nuevo Item'}
+                placement={isMobile ? 'bottom' : 'right'}
+                width={isMobile ? '100%' : 600}
+                height={isMobile ? '90vh' : '100%'}
                 open={isItemModalOpen}
-                onOk={handleSaveItem}
-                onCancel={() => setIsItemModalOpen(false)}
+                onClose={() => setIsItemModalOpen(false)}
                 destroyOnClose
+                extra={
+                    <Space>
+                        <Button onClick={() => setIsItemModalOpen(false)}>Cancelar</Button>
+                        <Button type="primary" onClick={handleSaveItem}>Guardar</Button>
+                    </Space>
+                }
             >
                 <Form form={itemForm} layout="vertical">
                     <Row gutter={16}>
@@ -310,15 +323,23 @@ export const InventoryPage = () => {
                         <Input.TextArea rows={2} />
                     </Form.Item>
                 </Form>
-            </Modal>
+            </Drawer>
 
             {/* Movement Modal */}
-            <Modal
+            <Drawer
                 title={`${movementType === 'IN' ? 'Entrada' : 'Salida'} — ${movementItem?.name}`}
+                placement={isMobile ? 'bottom' : 'right'}
+                width={isMobile ? '100%' : 400}
+                height={isMobile ? '60vh' : '100%'}
                 open={isMovementModalOpen}
-                onOk={handleSaveMovement}
-                onCancel={() => setIsMovementModalOpen(false)}
+                onClose={() => setIsMovementModalOpen(false)}
                 destroyOnClose
+                extra={
+                    <Space>
+                        <Button onClick={() => setIsMovementModalOpen(false)}>Cancelar</Button>
+                        <Button type="primary" onClick={handleSaveMovement}>Guardar</Button>
+                    </Space>
+                }
             >
                 <Form form={movementForm} layout="vertical">
                     <Form.Item name="quantityPackages" label="Cantidad (paquetes)" rules={[{ required: true }]}>
@@ -328,7 +349,7 @@ export const InventoryPage = () => {
                         <Input placeholder="Ej. Compra semanal" />
                     </Form.Item>
                 </Form>
-            </Modal>
+            </Drawer>
         </div>
     );
 };

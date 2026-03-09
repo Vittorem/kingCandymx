@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Table, Button, Input, Space, Tag, Popconfirm, message, Card, List as AntList } from 'antd';
+import { Table, Button, Input, Space, Tag, Popconfirm, message, Card, List as AntList, Skeleton } from 'antd';
 import { PlusOutlined, SearchOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { useFirestoreSubscription, useFirestoreMutation } from '../../hooks/useFirestore';
 import { Customer } from '../../types';
@@ -44,6 +44,7 @@ export const CustomerList = () => {
                 await add(values);
                 message.success('Cliente creado');
             }
+            if (navigator.vibrate) navigator.vibrate(50);
         } catch (error) {
             message.error('Error al guardar');
             throw error;
@@ -134,10 +135,11 @@ export const CustomerList = () => {
                     />
                 </div>
 
-                {isMobile ? (
+                {loading ? (
+                    <div style={{ padding: 24 }}><Skeleton active paragraph={{ rows: 6 }} /></div>
+                ) : isMobile ? (
                     <AntList
                         dataSource={filteredData}
-                        loading={loading}
                         renderItem={item => (
                             <Card size="small" style={{ marginBottom: 8 }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
@@ -162,10 +164,11 @@ export const CustomerList = () => {
                     />
                 ) : (
                     <Table
-                        columns={columns}
                         dataSource={filteredData}
+                        columns={columns}
                         rowKey="id"
-                        loading={loading}
+                        pagination={{ pageSize: 10 }}
+                        scroll={{ x: 'max-content' }}
                     />
                 )}
             </Card>
@@ -176,6 +179,6 @@ export const CustomerList = () => {
                 onSubmit={handleSubmit}
                 initialValues={editingCustomer}
             />
-        </div>
+        </div >
     );
 };

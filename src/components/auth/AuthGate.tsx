@@ -53,8 +53,8 @@ export const AuthGate = ({ children }: AuthGateProps) => {
             message.success('Bienvenido a Tiramisú CRM');
         } catch (error: unknown) {
             const msg = error instanceof Error ? error.message : 'Error desconocido';
-            console.error(error);
-            message.error(`Error al iniciar sesión: ${msg}`);
+            console.error('Error interno de autenticación: ', msg); // Loguear internamente
+            message.error('Error al iniciar sesión. Por favor, intenta nuevamente más tarde.'); // Mensaje genérico para el usuario
             setLoading(false);
         }
     };

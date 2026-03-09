@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Row, Col, Card, Typography, Statistic, DatePicker, Divider, Button, Modal, List, Result, Tabs, Badge, Tag } from 'antd';
+import { Row, Col, Card, Typography, Statistic, DatePicker, Divider, Button, Drawer, List, Result, Tabs, Tag, Segmented } from 'antd';
 import {
     DollarOutlined,
     ShoppingCartOutlined,
@@ -10,7 +10,6 @@ import {
     TrophyOutlined,
     LineChartOutlined,
     ClockCircleOutlined,
-    AlertOutlined,
 } from '@ant-design/icons';
 import {
     LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
@@ -36,11 +35,7 @@ import {
     analyzeTemporalPatterns,
     formatHoursByTimeBlock
 } from '../../utils/temporalAnalysis';
-import {
-    generateIntelligentAlerts,
-    type IntelligentAlert,
-    type PeriodMetrics
-} from '../../utils/intelligentAlerts';
+// Removed unused IntelligentAlerts because they are now in Top App Bar
 import { useIsMobile } from '../../hooks/useIsMobile';
 
 const { RangePicker } = DatePicker;
@@ -76,6 +71,19 @@ export const DashboardPage = () => {
     const { data: orders } = useFirestoreSubscription<Order>('orders');
     const { data: customers } = useFirestoreSubscription<Customer>('customers');
 
+    const [segment, setSegment] = useState<'Todos' | 'B2C' | 'B2B'>('Todos');
+
+    const filteredCustomers = useMemo(() => {
+        if (segment === 'Todos') return customers;
+        return customers.filter(c => c.type === segment);
+    }, [customers, segment]);
+
+    const filteredOrders = useMemo(() => {
+        if (segment === 'Todos') return orders;
+        const validCustomerIds = new Set(filteredCustomers.map(c => c.id));
+        return orders.filter(o => o.customerId && validCustomerIds.has(o.customerId));
+    }, [orders, filteredCustomers, segment]);
+
     const [dateRange, setDateRange] = useState<[dayjs.Dayjs, dayjs.Dayjs]>([
         dayjs().startOf('month'),
         dayjs().endOf('month'),
@@ -85,8 +93,8 @@ export const DashboardPage = () => {
     // ─── Derived data ─────────────────────────────────────────────────
 
     const deliveredOrders = useMemo(
-        () => getDeliveredOrdersInRange(orders, dateRange[0], dateRange[1]),
-        [orders, dateRange]
+        () => getDeliveredOrdersInRange(filteredOrders, dateRange[0], dateRange[1]),
+        [filteredOrders, dateRange]
     );
 
     const metrics = useMemo(() => {
@@ -133,13 +141,13 @@ export const DashboardPage = () => {
     }, [deliveredOrders]);
 
     const demographics = useMemo(
-        () => computeDemographics(customers, deliveredOrders),
-        [customers, deliveredOrders]
+        () => computeDemographics(filteredCustomers, deliveredOrders),
+        [filteredCustomers, deliveredOrders]
     );
 
     const inactiveCustomers = useMemo(
-        () => getInactiveCustomers(customers, orders, dateRange[1]),
-        [customers, orders, dateRange]
+        () => getInactiveCustomers(filteredCustomers, filteredOrders, dateRange[1]),
+        [filteredCustomers, filteredOrders, dateRange]
     );
 
     // ─── Previous period for comparisons ──────────────────────────────
@@ -153,16 +161,9 @@ export const DashboardPage = () => {
     }, [dateRange]);
 
     const previousDeliveredOrders = useMemo(
-        () => getDeliveredOrdersInRange(orders, previousPeriodRange[0], previousPeriodRange[1]),
-        [orders, previousPeriodRange]
+        () => getDeliveredOrdersInRange(filteredOrders, previousPeriodRange[0], previousPeriodRange[1]),
+        [filteredOrders, previousPeriodRange]
     );
-
-    const previousMetrics = useMemo(() => {
-        const totalRevenue = previousDeliveredOrders.reduce((acc, o) => acc + (o.total || 0), 0);
-        const totalOrders = previousDeliveredOrders.length;
-        const avgTicket = totalOrders > 0 ? totalRevenue / totalOrders : 0;
-        return { totalRevenue, totalOrders, avgTicket };
-    }, [previousDeliveredOrders]);
 
     // ─── RFM Analysis ──────────────────────────────────────────────────
 
@@ -205,24 +206,7 @@ export const DashboardPage = () => {
         [temporalAnalysis]
     );
 
-    // ─── Intelligent Alerts ────────────────────────────────────────────
-
-    const currentPeriodMetrics: PeriodMetrics = {
-        totalRevenue: metrics.totalSales,
-        totalOrders: metrics.totalOrders,
-        avgTicket: metrics.avgTicket,
-    };
-
-    const intelligentAlerts = useMemo(
-        () => generateIntelligentAlerts(
-            customers,
-            orders,
-            dateRange[1],
-            currentPeriodMetrics,
-            previousMetrics
-        ),
-        [customers, orders, dateRange, currentPeriodMetrics, previousMetrics]
-    );
+    // ─── Alerts moved to Global Component ────────────────────────────
 
     // ─── Insights ─────────────────────────────────────────────────────
 
@@ -368,53 +352,7 @@ export const DashboardPage = () => {
         </Row>
     );
 
-    const alertsTabContent = (
-        <Row gutter={[16, 16]}>
-            <Col xs={24}>
-                {intelligentAlerts.length === 0 ? (
-                    <Card>
-                        <Result
-                            status="success"
-                            title="Sin Alertas"
-                            subTitle="Todo está funcionando correctamente. No hay alertas en este momento."
-                        />
-                    </Card>
-                ) : (
-                    <List
-                        dataSource={intelligentAlerts}
-                        renderItem={(alert: IntelligentAlert) => {
-                            const severityColors = { HIGH: 'red', MEDIUM: 'orange', LOW: 'blue' };
-                            return (
-                                <Card
-                                    size="small"
-                                    style={{
-                                        marginBottom: 16,
-                                        borderLeft: `4px solid ${severityColors[alert.severity]}`
-                                    }}
-                                >
-                                    <List.Item>
-                                        <List.Item.Meta
-                                            avatar={<Badge status={alert.severity === 'HIGH' ? 'error' : alert.severity === 'MEDIUM' ? 'warning' : 'processing'} />}
-                                            title={
-                                                <>
-                                                    {alert.title}
-                                                    {' '}
-                                                    <Tag color={severityColors[alert.severity]}>
-                                                        {alert.severity}
-                                                    </Tag>
-                                                </>
-                                            }
-                                            description={alert.description}
-                                        />
-                                    </List.Item>
-                                </Card>
-                            );
-                        }}
-                    />
-                )}
-            </Col>
-        </Row>
-    );
+    // ─── Alerts Tab Removed ──────────────────────────────────────────
 
     // ─── Render ───────────────────────────────────────────────────────
 
@@ -422,14 +360,22 @@ export const DashboardPage = () => {
         <div>
             <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', justifyContent: 'space-between', alignItems: isMobile ? 'flex-start' : 'center', gap: 16, marginBottom: 24 }}>
                 <Title level={isMobile ? 3 : 2} style={{ margin: 0 }}>Dashboard</Title>
-                <RangePicker
-                    style={{ width: isMobile ? '100%' : 'auto' }}
-                    value={dateRange}
-                    onChange={(vals) => {
-                        if (vals?.[0] && vals?.[1]) setDateRange([vals[0], vals[1]]);
-                    }}
-                    format="DD/MM/YYYY"
-                />
+                <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: 16, width: isMobile ? '100%' : 'auto' }}>
+                    <Segmented
+                        options={['Todos', 'B2C', 'B2B']}
+                        value={segment}
+                        onChange={(value) => setSegment(value as any)}
+                        style={{ width: isMobile ? '100%' : 'auto' }}
+                    />
+                    <RangePicker
+                        style={{ width: isMobile ? '100%' : 'auto' }}
+                        value={dateRange}
+                        onChange={(vals) => {
+                            if (vals?.[0] && vals?.[1]) setDateRange([vals[0], vals[1]]);
+                        }}
+                        format="DD/MM/YYYY"
+                    />
+                </div>
             </div>
 
             {/* KPIs */}
@@ -586,42 +532,29 @@ export const DashboardPage = () => {
                             ),
                             children: temporalTabContent,
                         },
-                        {
-                            key: 'alerts',
-                            label: (
-                                <span>
-                                    <AlertOutlined />
-                                    {' '}{!isMobile && 'Alertas'}
-                                    {intelligentAlerts.length > 0 && (
-                                        <Badge
-                                            count={intelligentAlerts.length}
-                                            style={{ marginLeft: 8 }}
-                                        />
-                                    )}
-                                </span>
-                            ),
-                            children: alertsTabContent,
-                        },
                     ]}
                 />
             </Card>
 
             {/* Inactive customers modal */}
-            <Modal
+            <Drawer
                 title="Clientes Inactivos (30+ días sin compra)"
+                placement={isMobile ? 'bottom' : 'right'}
+                width={isMobile ? '100%' : 400}
+                height={isMobile ? '80vh' : '100%'}
                 open={inactiveModalOpen}
-                onCancel={() => setInactiveModalOpen(false)}
-                footer={null}
+                onClose={() => setInactiveModalOpen(false)}
             >
                 <List
                     dataSource={inactiveCustomers}
                     renderItem={c => (
                         <List.Item>
                             <List.Item.Meta title={c.fullName} description={c.phone} />
+                            <div style={{ color: '#ff4d4f', fontWeight: 'bold', fontSize: 13 }}>30+ días inactivo</div>
                         </List.Item>
                     )}
                 />
-            </Modal>
+            </Drawer>
         </div>
     );
 };

@@ -7,7 +7,7 @@ import {
     closestCenter,
 } from '@dnd-kit/core';
 import { Order, OrderStatus, KANBAN_STATUSES } from '../../../types';
-import { Card, Tag, Typography } from 'antd';
+import { Card, Tag, Typography, theme } from 'antd';
 import { useDroppable, useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import { toDay, getOrderDate } from '../../../utils/dateHelpers';
@@ -67,9 +67,10 @@ function SortableItem({ order, onClick }: { order: Order; onClick: () => void })
 
 function KanbanColumn({ status, orders, onEdit }: { status: OrderStatus; orders: Order[]; onEdit: (o: Order) => void }) {
     const { setNodeRef } = useDroppable({ id: status });
+    const { token: { colorBgLayout } } = theme.useToken();
 
     return (
-        <div ref={setNodeRef} style={{ flex: 1, background: '#f0f2f5', padding: 8, borderRadius: 8, minWidth: 250, display: 'flex', flexDirection: 'column' }}>
+        <div ref={setNodeRef} style={{ flex: 1, background: colorBgLayout, padding: 8, borderRadius: 8, minWidth: 250, display: 'flex', flexDirection: 'column' }}>
             <Typography.Title level={5} style={{ margin: '0 0 12px 0', textAlign: 'center' }}>
                 {status} ({orders.length})
             </Typography.Title>

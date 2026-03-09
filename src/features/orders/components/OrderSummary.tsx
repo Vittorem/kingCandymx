@@ -1,4 +1,4 @@
-import { Statistic, Space, Divider, Typography } from 'antd';
+import { Statistic, Space, Divider, Typography, theme } from 'antd';
 import { CheckCircleOutlined, ClockCircleOutlined } from '@ant-design/icons';
 import { Order } from '../../../types';
 
@@ -41,8 +41,10 @@ export const OrderSummary = ({ orders }: OrderSummaryProps) => {
         }, { chico: 0, mediano: 0, grande: 0, otro: 0 })
     };
 
+    const { token: { colorBgContainer, colorBorder } } = theme.useToken();
+
     return (
-        <div style={{ display: 'flex', alignItems: 'center', background: '#fff', padding: '16px 24px', borderRadius: 8, border: '1px solid #d9d9d9', width: '100%' }}>
+        <div style={{ display: 'flex', alignItems: 'center', background: colorBgContainer, padding: '16px 24px', borderRadius: 8, border: `1px solid ${colorBorder}`, width: '100%' }}>
             <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
                 <Statistic
                     title="Progreso"

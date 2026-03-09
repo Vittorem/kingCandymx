@@ -6,17 +6,17 @@ import { computeCustomerRFMScores } from './rfmAnalysis';
 /**
  * Alert types
  */
-export type AlertType = 'CHURN_RISK' | 'VIP_INACTIVE' | 'UPSELL_OPPORTUNITY' | 'SALES_DROP';
+type AlertType = 'CHURN_RISK' | 'VIP_INACTIVE' | 'UPSELL_OPPORTUNITY' | 'SALES_DROP';
 
 /**
  * Alert severity
  */
-export type AlertSeverity = 'HIGH' | 'MEDIUM' | 'LOW';
+type AlertSeverity = 'HIGH' | 'MEDIUM' | 'LOW';
 
 /**
  * Intelligent alert
  */
-export interface IntelligentAlert {
+interface IntelligentAlert {
     type: AlertType;
     severity: AlertSeverity;
     title: string;
