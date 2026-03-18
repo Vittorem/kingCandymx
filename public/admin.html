@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>King Candy â€” Mini-admin contador</title>
+    <meta name="description" content="Panel bÃ¡sico para actualizar el contador de tiramisÃºs vendidos." />
+    <link rel="icon" type="image/svg+xml" href="./assets/logo-k.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Italiana&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="./styles/extras.css" />
+    <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              display: ['Italiana', 'serif'],
+              sans: ['"Helvetica Neue"', 'Arial', 'sans-serif']
+            },
+            colors: {
+              branddark: '#35281F',
+              brandlight: '#F9F0E1',
+              brandaccent: '#CAA64E',
+              brandtext: '#070707'
+            }
+          }
+        }
+      };
+    </script>
+  </head>
+  <body class="min-h-screen bg-brandlight text-brandtext">
+    <div class="bg-paper-texture min-h-screen">
+      <header class="border-b border-brandaccent/20 bg-brandlight/90 backdrop-blur">
+        <div class="mx-auto flex max-w-4xl items-center justify-between gap-4 px-6 py-4">
+          <a href="/" class="flex items-center gap-3" aria-label="King Candy">
+            <img src="./assets/logo-k.svg" alt="King Candy" class="h-10 w-10" />
+            <span class="text-xl font-display text-branddark">King Candy</span>
+          </a>
+          <nav class="flex items-center gap-4 text-sm">
+            <div class="flex items-center gap-2" aria-label="Selector de idioma">
+              <button data-lang="es" class="language-toggle rounded-full border border-transparent px-3 py-1 text-lg hover:border-brandaccent focus-visible:outline focus-visible:outline-2 focus-visible:outline-brandaccent" aria-label="Cambiar a espaÃ±ol">ðŸ‡²ðŸ‡½</button>
+              <button data-lang="en" class="language-toggle rounded-full border border-transparent px-3 py-1 text-lg hover:border-brandaccent focus-visible:outline focus-visible:outline-2 focus-visible:outline-brandaccent" aria-label="Switch to English">ðŸ‡ºðŸ‡¸</button>
+            </div>
+            <a href="/index.html" class="rounded-full border border-branddark px-4 py-2 font-medium text-branddark transition hover:border-brandaccent hover:text-brandaccent focus-visible:outline focus-visible:outline-2 focus-visible:outline-brandaccent" data-i18n="admin.back">Volver a la landing</a>
+          </nav>
+        </div>
+      </header>
+      <main class="mx-auto max-w-4xl px-6 py-12">
+        <div class="rounded-3xl bg-white/70 p-8 shadow-soft">
+          <h1 class="text-3xl font-display text-branddark" data-i18n="admin.title">Mini-admin King Candy</h1>
+          <p class="mt-2 text-sm text-branddark/80" data-i18n="admin.subtitle">Actualiza manualmente el contador de tiramisÃºs vendidos.</p>
+
+          <div class="mt-10 grid gap-6 md:grid-cols-[1.4fr_1fr]">
+            <section class="space-y-6">
+              <div class="rounded-2xl border border-brandaccent/40 bg-brandlight/60 p-6">
+                <h2 class="text-xl font-display text-branddark" data-i18n="admin.counterHeading">TiramisÃºs vendidos</h2>
+                <p class="mt-4 text-4xl font-display text-branddark" id="adminSoldCount">---</p>
+                <div class="mt-6 flex flex-wrap gap-3">
+                  <button id="incrementBtn" class="rounded-full bg-branddark px-4 py-2 text-sm font-semibold text-brandlight transition hover:bg-brandaccent hover:text-branddark focus-visible:outline focus-visible:outline-2 focus-visible:outline-brandaccent" data-i18n="admin.increment">+1</button>
+                  <button id="decrementBtn" class="rounded-full border border-branddark px-4 py-2 text-sm font-semibold text-branddark transition hover:border-brandaccent hover:text-brandaccent focus-visible:outline focus-visible:outline-2 focus-visible:outline-brandaccent" data-i18n="admin.decrement">-1</button>
+                </div>
+                <form class="mt-6 flex flex-wrap items-end gap-3" id="manualForm">
+                  <label class="flex flex-col text-sm font-medium text-branddark">
+                    <span data-i18n="admin.setLabel">Establecer valor manual</span>
+                    <input type="number" min="0" id="manualInput" class="mt-2 w-40 rounded-xl border border-brandaccent/40 bg-white px-3 py-2 focus:border-brandaccent focus-visible:outline focus-visible:outline-2 focus-visible:outline-brandaccent" />
+                  </label>
+                  <button type="submit" class="rounded-full bg-branddark px-5 py-2 text-sm font-semibold text-brandlight transition hover:bg-brandaccent hover:text-branddark focus-visible:outline focus-visible:outline-2 focus-visible:outline-brandaccent" data-i18n="admin.setButton">Actualizar contador</button>
+                </form>
+                <p id="statusMessage" class="mt-4 text-sm text-branddark/80" role="status"></p>
+              </div>
+              <div class="flex items-center gap-3">
+                <button id="logoutBtn" class="rounded-full border border-branddark px-4 py-2 text-sm font-medium text-branddark transition hover:border-brandaccent hover:text-brandaccent focus-visible:outline focus-visible:outline-2 focus-visible:outline-brandaccent" data-i18n="admin.logout">Cerrar sesiÃ³n</button>
+              </div>
+            </section>
+            <aside class="rounded-2xl border border-brandaccent/40 bg-brandlight/50 p-6 text-sm">
+              <h2 class="text-lg font-semibold text-branddark" data-i18n="admin.securityTitle">Seguridad temporal</h2>
+              <p class="mt-3 leading-relaxed" data-i18n="admin.securityBody">Este mini-admin usa un passcode bÃ¡sico. Para producciÃ³n, migra a Firebase Auth (Email/Password) y refuerza las reglas de Firestore.</p>
+              <a href="https://firebase.google.com/docs/auth/web/password-auth" target="_blank" rel="noopener" class="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-brandaccent underline decoration-2 underline-offset-2" data-i18n="admin.securityLink">Ver guÃ­a recomendada</a>
+            </aside>
+          </div>
+        </div>
+      </main>
+
+      <div id="passcodeOverlay" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 px-6">
+        <div class="w-full max-w-md rounded-3xl bg-brandlight p-8 shadow-2xl">
+          <h2 class="text-2xl font-display text-branddark" data-i18n="admin.passcodeTitle">Introduce el passcode proporcionado</h2>
+          <form id="passcodeForm" class="mt-6 space-y-4">
+            <label class="block text-sm font-medium text-branddark">
+              <span class="sr-only" data-i18n="admin.passcodePlaceholder">Passcode</span>
+              <input type="password" id="passcodeInput" class="w-full rounded-xl border border-brandaccent/40 bg-white px-3 py-3 focus:border-brandaccent focus-visible:outline focus-visible:outline-2 focus-visible:outline-brandaccent" data-i18n="admin.passcodePlaceholder" data-i18n-attr="placeholder" placeholder="Passcode" />
+            </label>
+            <button type="submit" class="w-full rounded-full bg-branddark px-5 py-3 text-sm font-semibold text-brandlight transition hover:bg-brandaccent hover:text-branddark focus-visible:outline focus-visible:outline-2 focus-visible:outline-brandaccent" data-i18n="admin.passcodeButton">Entrar</button>
+            <p id="passcodeError" class="hidden text-sm text-red-600" data-i18n="admin.passcodeError">Passcode incorrecto. Intenta de nuevo.</p>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <script type="module">
+      window.firebaseConfig = {
+        apiKey: 'TODO_API_KEY',
+        authDomain: 'TODO_PROJECT.firebaseapp.com',
+        projectId: 'TODO_PROJECT_ID',
+        storageBucket: 'TODO_PROJECT.appspot.com',
+        messagingSenderId: 'TODO_SENDER_ID',
+        appId: 'TODO_APP_ID',
+        measurementId: 'G-XXXXXXX'
+      };
+    </script>
+    <script type="module" src="./js/i18n.js"></script>
+    <script type="module" src="./js/admin.js"></script>
+  </body>
+</html>

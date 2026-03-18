@@ -1,0 +1,121 @@
+:root {
+  color-scheme: light;
+}
+
+/* ============================================================
+   NAVBAR SCROLL EFFECT
+   ============================================================ */
+#navbar {
+  transition: background-color 0.3s ease, box-shadow 0.3s ease, padding 0.3s ease;
+}
+
+#navbar.scrolled {
+  background-color: rgba(255, 253, 249, 0.92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 1px 20px rgba(26, 10, 46, 0.08);
+  padding-top: 1rem;
+  padding-bottom: 1rem;
+}
+
+/* ============================================================
+   HERO IMAGE
+   ============================================================ */
+.hero-img {
+  transform: rotate(2deg);
+  transition: transform 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.hero-img:hover {
+  transform: rotate(0deg);
+}
+
+/* ============================================================
+   MARQUEE
+   ============================================================ */
+.marquee-track {
+  will-change: transform;
+}
+
+.marquee-inner {
+  animation: marquee-scroll 24s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes marquee-scroll {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-100%); }
+}
+
+.marquee-item {
+  display: inline-block;
+  font-size: 1.4rem;
+  font-weight: 900;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(255, 253, 249, 0.9);
+  margin: 0 2.5rem;
+  white-space: nowrap;
+}
+
+.marquee-star {
+  display: inline-block;
+  color: #FF2D78;
+  font-size: 1.1rem;
+  flex-shrink: 0;
+  margin: 0 0.25rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marquee-inner {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
+
+/* ============================================================
+   PRODUCT CARDS
+   ============================================================ */
+.product-card {
+  transition: box-shadow 0.3s ease, transform 0.3s ease;
+}
+
+.product-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 20px 40px -12px rgba(255, 45, 120, 0.2);
+}
+
+.product-overlay .buy-btn {
+  transition: transform 0.3s ease, background-color 0.2s ease, color 0.2s ease;
+}
+
+/* ============================================================
+   HOW-TO CARDS
+   ============================================================ */
+.how-card {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.how-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 16px 32px -12px rgba(26, 10, 46, 0.12);
+}
+
+/* ============================================================
+   ACCESSIBILITY
+   ============================================================ */
+*:focus-visible {
+  outline: 2px solid #FF2D78;
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
