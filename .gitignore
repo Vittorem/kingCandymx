@@ -1,0 +1,19 @@
+# Dependencias
+node_modules/
+
+# Credenciales Firebase — NO subir al repositorio
+public/firebase.js
+
+# Variables de entorno
+.env
+.env.local
+.env.*.local
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS
+.DS_Store
+Thumbs.db
