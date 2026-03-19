@@ -18,6 +18,7 @@ export const RecipeDetailPanel = ({ recipe, onClose }: RecipeDetailPanelProps) =
     const { data: ingredients } = useFirestoreSubscription<Ingredient>('ingredients');
     const [desiredServings, setDesiredServings] = useState<number>(recipe.servings_default);
     const [clientName, setClientName] = useState('');
+    const [salePricePerServing, setSalePricePerServing] = useState<number>(0);
 
     // Update whenever recipe changes
     useMemo(() => {
@@ -52,38 +53,43 @@ export const RecipeDetailPanel = ({ recipe, onClose }: RecipeDetailPanelProps) =
 
     const generatePDF = () => {
         if (!clientName) {
-            message.warning('Por favor ingresa un nombre de cliente / negocio para la cotización.');
+            message.warning('Por favor ingresa un nombre de cliente para la cotización.');
+            return;
+        }
+
+        if (!salePricePerServing || salePricePerServing <= 0) {
+            message.warning('Por favor ingresa un precio de venta mayor a 0 para generar la cotización.');
             return;
         }
 
         const doc = new jsPDF();
         const dateStr = dayjs().format('DD/MM/YYYY');
-        const costPerServing = desiredServings > 0 ? scaledData.totalCost / desiredServings : 0;
+        const totalQuoteAmount = desiredServings * salePricePerServing;
 
         // Header
         doc.setFontSize(20);
-        doc.text('Cotización de Receta', 14, 22);
+        doc.text('Cotización Comercial', 14, 22);
         
         doc.setFontSize(12);
         doc.text(`Cliente: ${clientName}`, 14, 32);
         doc.text(`Fecha: ${dateStr}`, 14, 38);
         
         doc.setFontSize(14);
-        doc.text(`Receta: ${recipe.name}`, 14, 50);
-        doc.setFontSize(12);
-        doc.text(`Porciones: ${desiredServings}`, 14, 58);
+        doc.text(`Concepto: ${recipe.name}`, 14, 50);
 
-        // Ingredients Table
-        const tableData = scaledData.items.map(item => [
-            item.name,
-            `${item.qty.toFixed(2)} ${item.unit}`,
-            `$${item.costUnit.toFixed(2)}`,
-            `$${item.itemCost.toFixed(2)}`
-        ]);
+        // Commercial Table
+        const tableData = [
+            [
+                recipe.name, 
+                desiredServings.toString(), 
+                `$${salePricePerServing.toFixed(2)}`, 
+                `$${totalQuoteAmount.toFixed(2)}`
+            ]
+        ];
 
         autoTable(doc, {
-            startY: 65,
-            head: [['Ingrediente', 'Cantidad Req.', 'Costo Unit.', 'Costo Total']],
+            startY: 55,
+            head: [['Artículo/Concepto', 'Porciones', 'Precio Unitario', 'Importe']],
             body: tableData,
             theme: 'striped',
             headStyles: { fillColor: [212, 163, 115] } // Tiramisu Primary Color
@@ -91,12 +97,12 @@ export const RecipeDetailPanel = ({ recipe, onClose }: RecipeDetailPanelProps) =
 
         // Summary
         const finalY = (doc as any).lastAutoTable.finalY || 65;
-        doc.setFontSize(12);
-        doc.text(`Costo Total: $${scaledData.totalCost.toFixed(2)}`, 14, finalY + 10);
-        doc.text(`Costo Sugerido por Porción: $${costPerServing.toFixed(2)}`, 14, finalY + 18);
+        doc.setFontSize(14);
+        doc.setFont("helvetica", "bold");
+        doc.text(`Gran Total: $${totalQuoteAmount.toFixed(2)}`, 14, finalY + 15);
 
         doc.save(`Cotizacion_${recipe.name.replace(/\s+/g, '_')}_${dateStr}.pdf`);
-        message.success('PDF generado exitosamente');
+        message.success('Cotización en PDF generada exitosamente');
     };
 
     const handleExportJSON = () => {
@@ -133,6 +139,12 @@ export const RecipeDetailPanel = ({ recipe, onClose }: RecipeDetailPanelProps) =
     ];
 
     const costPerServing = desiredServings > 0 ? scaledData.totalCost / desiredServings : 0;
+    
+    // Profit Calculations
+    const totalQuoteAmount = desiredServings * salePricePerServing;
+    const estimatedTotalProfit = totalQuoteAmount > 0 ? totalQuoteAmount - scaledData.totalCost : 0;
+    const estimatedUnitProfit = salePricePerServing > 0 ? salePricePerServing - costPerServing : 0;
+    const profitMarginPercent = totalQuoteAmount > 0 ? (estimatedTotalProfit / totalQuoteAmount) * 100 : 0;
 
     return (
         <div className="bg-white dark:bg-[#1f1f1f] rounded-2xl p-4 md:p-6 shadow-sm border border-gray-100 dark:border-gray-800 h-full flex flex-col relative">
@@ -177,18 +189,53 @@ export const RecipeDetailPanel = ({ recipe, onClose }: RecipeDetailPanelProps) =
                         </div>
                     </div>
                     
-                    <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto sm:items-center">
-                        <Input 
-                            placeholder="Nombre del Cliente (Cotización)" 
-                            value={clientName}
-                            onChange={(e) => setClientName(e.target.value)}
-                            className="w-full sm:w-72"
-                        />
-                        <div className="flex gap-2 w-full sm:w-auto">
-                            <Button type="primary" icon={<FilePdfOutlined />} onClick={generatePDF} className="bg-[#bc6c25] hover:bg-[#a95c1e] border-none shadow-sm flex-1 sm:flex-none">
-                                PDF
+                    <div className="flex flex-col gap-3 w-full xl:w-auto">
+                        <div className="flex flex-col sm:flex-row gap-3">
+                            <Input 
+                                placeholder="Nombre del Cliente" 
+                                value={clientName}
+                                onChange={(e) => setClientName(e.target.value)}
+                                className="w-full sm:w-60"
+                            />
+                            <div className="flex items-center gap-2">
+                                <span className="text-sm font-medium text-gray-600 dark:text-gray-400 whitespace-nowrap">Precio de Venta c/u:</span>
+                                <InputNumber
+                                    prefix="$"
+                                    placeholder="Ej. 45"
+                                    min={0}
+                                    value={salePricePerServing}
+                                    onChange={(val) => setSalePricePerServing(val || 0)}
+                                    className="w-full sm:w-32"
+                                />
+                            </div>
+                        </div>
+
+                        {/* Rentabilidad Sugerida (Solo Interno) */}
+                        {salePricePerServing > 0 && (
+                            <div className="flex justify-between items-center bg-green-50 dark:bg-green-900/20 px-4 py-2 rounded-lg border border-green-200 dark:border-green-800/50 mt-1">
+                                <div className="text-sm">
+                                    <span className="text-green-800 dark:text-green-300 font-semibold">Ganancia Neta: </span>
+                                    <span className="text-green-700 dark:text-green-400 font-black">
+                                        ${estimatedTotalProfit.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                    </span>
+                                    <span className="text-gray-500 dark:text-gray-400 text-xs ml-1">
+                                        (${estimatedUnitProfit.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} c/u)
+                                    </span>
+                                </div>
+                                <div className="text-sm text-right">
+                                    <span className="text-green-800 dark:text-green-300 font-semibold">Margen: </span>
+                                    <span className={`font-black ${profitMarginPercent >= 30 ? 'text-green-600 dark:text-green-400' : 'text-orange-500 dark:text-orange-400'}`}>
+                                        {profitMarginPercent.toFixed(1)}%
+                                    </span>
+                                </div>
+                            </div>
+                        )}
+                        
+                        <div className="flex gap-2 w-full mt-2 lg:mt-0">
+                            <Button type="primary" icon={<FilePdfOutlined />} onClick={generatePDF} className="bg-[#bc6c25] hover:bg-[#a95c1e] border-none shadow-sm flex-1">
+                                Generar Cotización PDF
                             </Button>
-                            <Button icon={<DownloadOutlined />} onClick={handleExportJSON} className="flex-1 sm:flex-none">
+                            <Button icon={<DownloadOutlined />} onClick={handleExportJSON} className="flex-none">
                                 JSON
                             </Button>
                         </div>

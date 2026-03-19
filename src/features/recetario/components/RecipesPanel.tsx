@@ -2,7 +2,7 @@ import { useState, useMemo, useRef } from 'react';
 import { Button, Modal, Form, Input, InputNumber, Select, Typography, Spin, Popconfirm, message, Switch, Row, Col } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, CopyOutlined, UploadOutlined } from '@ant-design/icons';
 import { useFirestoreSubscription, useFirestoreMutation } from '../../../hooks/useFirestore';
-import { Recipe, Ingredient, RecipeIngredient } from '../../../types';
+import { Recipe, Ingredient, RecipeIngredient, Product, Flavor } from '../../../types';
 
 const { Title } = Typography;
 
@@ -15,6 +15,8 @@ interface RecipesPanelProps {
 export const RecipesPanel = ({ onSelectRecipe, selectedRecipeId, onClearSelection }: RecipesPanelProps) => {
     const { data: recipes, loading: recipesLoading } = useFirestoreSubscription<Recipe>('recipes');
     const { data: ingredients, loading: ingredientsLoading } = useFirestoreSubscription<Ingredient>('ingredients');
+    const { data: products } = useFirestoreSubscription<Product>('catalog_products');
+    const { data: flavors } = useFirestoreSubscription<Flavor>('catalog_flavors');
     const { add, update, softDelete } = useFirestoreMutation<Recipe>('recipes');
 
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -285,6 +287,27 @@ export const RecipesPanel = ({ onSelectRecipe, selectedRecipeId, onClearSelectio
                         <Col span={8}>
                             <Form.Item name="servings_default" label="Porciones base" rules={[{ required: true, message: 'Requerido' }]}>
                                 <InputNumber min={1} className="w-full" />
+                            </Form.Item>
+                        </Col>
+                    </Row>
+                    
+                    <Row gutter={16}>
+                        <Col span={12}>
+                            <Form.Item name="linkedProductId" label="Producto Enlazado (Ventas)" tooltip="Selecciona aquí a qué producto de tu catálogo de ventas pertenece esta receta. Ayuda a calcular costos exactos y ganancias netas por pedido.">
+                                <Select 
+                                    allowClear 
+                                    placeholder="Sin enlazar" 
+                                    options={products?.filter(p => p.isActive).map(p => ({ value: p.id, label: p.name }))} 
+                                />
+                            </Form.Item>
+                        </Col>
+                        <Col span={12}>
+                            <Form.Item name="linkedFlavorId" label="Sabor Enlazado (Ventas)" tooltip="Si este producto tiene un sabor en específico, elígelo para asegurar que los márgenes de ganancia crucen exactamente con las ventas.">
+                                <Select 
+                                    allowClear 
+                                    placeholder="Sin enlazar" 
+                                    options={flavors?.filter(f => f.isActive).map(f => ({ value: f.id, label: f.name }))} 
+                                />
                             </Form.Item>
                         </Col>
                     </Row>

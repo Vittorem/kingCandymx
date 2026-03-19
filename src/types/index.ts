@@ -172,6 +172,8 @@ export interface Recipe extends BaseEntity {
     servings_default: number;
     is_variant: boolean;
     ingredients: RecipeIngredient[];
+    linkedProductId?: string; // ID of the product from Settings this recipe belongs to
+    linkedFlavorId?: string; // ID of the flavor from Settings this recipe belongs to
 }
 
 // --- Loyalty System ---

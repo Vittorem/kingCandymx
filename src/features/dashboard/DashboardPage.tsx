@@ -10,6 +10,8 @@ import {
     TrophyOutlined,
     LineChartOutlined,
     ClockCircleOutlined,
+    CarOutlined,
+    CrownOutlined,
 } from '@ant-design/icons';
 import {
     LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
@@ -17,9 +19,10 @@ import {
 } from 'recharts';
 import dayjs from 'dayjs';
 import { useFirestoreSubscription } from '../../hooks/useFirestore';
-import { Order, Customer } from '../../types';
+import { Order, Customer, Recipe, Ingredient } from '../../types';
 import { getOrderDate, getDeliveredOrdersInRange } from '../../utils/dateHelpers';
 import { computeDemographics, getInactiveCustomers } from '../../utils/demographicsHelpers';
+import { calculateOrderEstimatedCost } from '../../utils/costHelpers';
 import {
     computeCustomerRFMScores,
     aggregateRFMSegments,
@@ -70,6 +73,8 @@ export const DashboardPage = () => {
 
     const { data: orders } = useFirestoreSubscription<Order>('orders');
     const { data: customers } = useFirestoreSubscription<Customer>('customers');
+    const { data: recipes } = useFirestoreSubscription<Recipe>('recipes');
+    const { data: ingredients } = useFirestoreSubscription<Ingredient>('ingredients');
 
     const [segment, setSegment] = useState<'Todos' | 'B2C' | 'B2B'>('Todos');
 
@@ -99,9 +104,43 @@ export const DashboardPage = () => {
 
     const metrics = useMemo(() => {
         const totalSales = deliveredOrders.reduce((acc, o) => acc + (o.total || 0), 0);
+        
+        // Calculate costs
+        const totalOperationalCosts = deliveredOrders.reduce((acc, o) => {
+            const estimatedCost = calculateOrderEstimatedCost(o, recipes, ingredients);
+            return acc + estimatedCost;
+        }, 0);
+        
+        const netProfit = totalSales - totalOperationalCosts;
+        const profitMargin = totalSales > 0 ? (netProfit / totalSales) * 100 : 0;
+        
+        const totalShippingRevenue = deliveredOrders.reduce((acc, o) => {
+            if (o.deliveryMethod === 'Envío' && o.shippingCost) {
+                return acc + Number(o.shippingCost);
+            }
+            return acc;
+        }, 0);
+        
         const totalOrders = deliveredOrders.length;
         const avgTicket = totalOrders > 0 ? totalSales / totalOrders : 0;
         const uniqueCustomers = new Set(deliveredOrders.map(o => o.customerId)).size;
+
+        // Top Customer
+        const customerStats: Record<string, { name: string; qty: number; revenue: number }> = {};
+        deliveredOrders.forEach(o => {
+            if (!o.customerId) return;
+            if (!customerStats[o.customerId]) {
+                const cName = customers.find(c => c.id === o.customerId)?.fullName || o.customerName || 'Cliente';
+                customerStats[o.customerId] = { name: cName, qty: 0, revenue: 0 };
+            }
+            customerStats[o.customerId].qty += 1;
+            customerStats[o.customerId].revenue += o.total || 0;
+        });
+        const sortedCustomers = Object.values(customerStats).sort((a, b) => {
+            if (b.qty !== a.qty) return b.qty - a.qty;
+            return b.revenue - a.revenue;
+        });
+        const topCustomer = sortedCustomers.length > 0 ? sortedCustomers[0] : null;
 
         // Product ranking
         const productCount: Record<string, { qty: number; revenue: number }> = {};
@@ -122,7 +161,7 @@ export const DashboardPage = () => {
         });
         const topProducts = Object.entries(productCount)
             .map(([name, data]) => ({ name, ...data }))
-            .sort((a, b) => b.revenue - a.revenue);
+            .sort((a, b) => b.qty - a.qty);
 
         // Daily trend
         const dailyMap: Record<string, number> = {};
@@ -133,12 +172,25 @@ export const DashboardPage = () => {
                 dailyMap[key] = (dailyMap[key] || 0) + o.total;
             }
         });
+
         const dailyTrend = Object.entries(dailyMap)
             .map(([date, ventas]) => ({ date, ventas }))
             .sort((a, b) => a.date.localeCompare(b.date));
 
-        return { totalSales, totalOrders, avgTicket, uniqueCustomers, topProducts, dailyTrend };
-    }, [deliveredOrders]);
+        return { 
+            totalSales, 
+            totalOperationalCosts,
+            netProfit,
+            profitMargin,
+            totalShippingRevenue,
+            totalOrders, 
+            avgTicket, 
+            uniqueCustomers, 
+            topCustomer,
+            topProducts, 
+            dailyTrend 
+        };
+    }, [deliveredOrders, recipes, ingredients, customers]);
 
     const demographics = useMemo(
         () => computeDemographics(filteredCustomers, deliveredOrders),
@@ -216,7 +268,7 @@ export const DashboardPage = () => {
         if (metrics.topProducts.length > 0) items.push(`🏆 Producto estrella: ${metrics.topProducts[0].name}`);
         if (inactiveCustomers.length > 0) items.push(`⚠️ ${inactiveCustomers.length} cliente(s) sin compra en 30 días`);
         if (demographics.genderData.length > 0) {
-            const top = demographics.genderData.sort((a, b) => b.value - a.value)[0];
+            const top = [...demographics.genderData].sort((a, b) => b.value - a.value)[0];
             items.push(`👥 Mayoría de compradores: ${top.name}`);
         }
         return items;
@@ -384,13 +436,31 @@ export const DashboardPage = () => {
                     <KPICard title="Ventas Totales" value={`$${metrics.totalSales.toFixed(2)}`} prefix={<DollarOutlined />} color="#52c41a" />
                 </Col>
                 <Col xs={24} sm={12} lg={6}>
+                    <KPICard title="Costo Operativo" value={`$${metrics.totalOperationalCosts.toFixed(2)}`} prefix={<FallOutlined />} color="#ff4d4f" />
+                </Col>
+                <Col xs={24} sm={12} lg={6}>
+                    <KPICard title="Ganancia Neta" value={`$${metrics.netProfit.toFixed(2)}`} prefix={<RiseOutlined />} color="#faad14" />
+                </Col>
+                <Col xs={24} sm={12} lg={6}>
+                    <KPICard title="Margen Beneficio" value={`${metrics.profitMargin.toFixed(1)}%`} prefix={<TrophyOutlined />} color={metrics.profitMargin >= 30 ? "#52c41a" : "#faad14"} />
+                </Col>
+                <Col xs={24} sm={12} lg={6}>
+                    <KPICard title="Ingresos por Envíos" value={`$${metrics.totalShippingRevenue.toFixed(2)}`} prefix={<CarOutlined />} color="#00C49F" />
+                </Col>
+                <Col xs={24} sm={12} lg={6}>
                     <KPICard title="Pedidos" value={metrics.totalOrders} prefix={<ShoppingCartOutlined />} color="#1890ff" />
                 </Col>
                 <Col xs={24} sm={12} lg={6}>
-                    <KPICard title="Ticket Promedio" value={`$${metrics.avgTicket.toFixed(2)}`} prefix={<RiseOutlined />} color="#faad14" />
+                    <KPICard title="Clientes Únicos" value={metrics.uniqueCustomers} prefix={<UserOutlined />} color="#722ed1" />
                 </Col>
                 <Col xs={24} sm={12} lg={6}>
-                    <KPICard title="Clientes Únicos" value={metrics.uniqueCustomers} prefix={<UserOutlined />} color="#722ed1" />
+                    <KPICard 
+                        title="Mejor Cliente" 
+                        value={metrics.topCustomer ? metrics.topCustomer.name.split(' ')[0] : 'N/A'} 
+                        suffix={metrics.topCustomer ? `(${metrics.topCustomer.qty} ped.)` : ''} 
+                        prefix={<CrownOutlined />} 
+                        color="#eb2f96" 
+                    />
                 </Col>
             </Row>
 
@@ -418,8 +488,8 @@ export const DashboardPage = () => {
                                 <CartesianGrid strokeDasharray="3 3" />
                                 <XAxis type="number" />
                                 <YAxis dataKey="name" type="category" width={100} />
-                                <Tooltip formatter={(value: number | undefined) => [`$${value}`, 'Venta']} />
-                                <Bar dataKey="revenue" radius={[0, 6, 6, 0]}>
+                                <Tooltip formatter={(value: number | undefined) => [`${value} unidades`, 'Vendidos']} />
+                                <Bar dataKey="qty" radius={[0, 6, 6, 0]}>
                                     {metrics.topProducts.map((_, i) => (
                                         <Cell key={i} fill={COLORS[i % COLORS.length]} />
                                     ))}

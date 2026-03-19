@@ -1,24 +1,23 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { User, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from 'firebase/auth';
+import { User, signOut, onAuthStateChanged } from 'firebase/auth';
 import { auth } from '../../lib/firebase';
-import { Button, Card, Spin, Typography, Layout, message } from 'antd';
-import { GoogleOutlined } from '@ant-design/icons';
+import { Spin } from 'antd';
+import { LoginPage } from './LoginPage';
+import { RegisterPage } from './RegisterPage';
+import { EmailVerificationPending } from './EmailVerificationPending';
 
-const { Title, Text } = Typography;
-const { Content } = Layout;
-
-// ─── Auth Context ────────────────────────────────────────────────────────────
+// ─── Auth Context ─────────────────────────────────────────────────────────────
 
 interface AuthContextValue {
-    user: User | null;
+    user: User;
     logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 /**
- * Custom hook to access auth state. Uses React Context under the hood
- * so the user value is always in-sync with onAuthStateChanged.
+ * Custom hook to access auth state.
+ * The `user` returned here is always verified (email verified or Google account).
  */
 export const useAuth = (): AuthContextValue => {
     const ctx = useContext(AuthContext);
@@ -26,7 +25,9 @@ export const useAuth = (): AuthContextValue => {
     return ctx;
 };
 
-// ─── AuthGate Component ──────────────────────────────────────────────────────
+// ─── AuthGate Component ───────────────────────────────────────────────────────
+
+type AuthView = 'login' | 'register';
 
 interface AuthGateProps {
     children: ReactNode;
@@ -35,6 +36,7 @@ interface AuthGateProps {
 export const AuthGate = ({ children }: AuthGateProps) => {
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
+    const [view, setView] = useState<AuthView>('login');
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (u) => {
@@ -44,22 +46,9 @@ export const AuthGate = ({ children }: AuthGateProps) => {
         return () => unsubscribe();
     }, []);
 
-    const handleLogin = async () => {
-        try {
-            setLoading(true);
-            const provider = new GoogleAuthProvider();
-            provider.setCustomParameters({ prompt: 'select_account' });
-            await signInWithPopup(auth, provider);
-            message.success('Bienvenido a Tiramisú CRM');
-        } catch (error: unknown) {
-            const msg = error instanceof Error ? error.message : 'Error desconocido';
-            console.error('Error interno de autenticación: ', msg); // Loguear internamente
-            message.error('Error al iniciar sesión. Por favor, intenta nuevamente más tarde.'); // Mensaje genérico para el usuario
-            setLoading(false);
-        }
-    };
-
     const logout = () => signOut(auth);
+
+    // ── Loading ──────────────────────────────────────────────────────────────
 
     if (loading) {
         return (
@@ -69,28 +58,22 @@ export const AuthGate = ({ children }: AuthGateProps) => {
         );
     }
 
+    // ── Not logged in ─────────────────────────────────────────────────────────
+
     if (!user) {
-        return (
-            <Layout style={{ minHeight: '100vh', background: '#f0f2f5' }}>
-                <Content style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                    <Card style={{ width: '100%', maxWidth: 400, textAlign: 'center', borderRadius: 8, boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
-                        <Title level={2} style={{ marginBottom: 8 }}>Tiramisú CRM</Title>
-                        <Text type="secondary" style={{ display: 'block', marginBottom: 24 }}>Sistema de Gestión y Pedidos</Text>
-                        <Button
-                            type="primary"
-                            icon={<GoogleOutlined />}
-                            size="large"
-                            block
-                            onClick={handleLogin}
-                            style={{ height: 48, fontSize: 16 }}
-                        >
-                            Iniciar Sesión con Google
-                        </Button>
-                    </Card>
-                </Content>
-            </Layout>
-        );
+        if (view === 'register') {
+            return <RegisterPage onGoLogin={() => setView('login')} />;
+        }
+        return <LoginPage onGoRegister={() => setView('register')} />;
     }
+
+    // ── Logged in but email not verified (only applies to email/password accounts)
+    // Google accounts always have emailVerified = true
+    if (!user.emailVerified) {
+        return <EmailVerificationPending email={user.email} />;
+    }
+
+    // ── Fully authenticated ───────────────────────────────────────────────────
 
     return (
         <AuthContext.Provider value={{ user, logout }}>

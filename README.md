@@ -1,94 +1,94 @@
-# Tiramisú CRM
+# King Candy: CRM Tiramisú
 
-Sistema de gestión de clientes, pedidos, inventario y reportes para un negocio de tiramisú.
+Sistema integral de gestión de clientes, pedidos, inventario, reportes y lealtad para **King Candy La Casa Del Tiramisú**.
 
-## Stack Tecnológico
+## 🚀 Funcionalidades de Negocio
+
+### 🛒 Gestión de Pedidos (Kanban)
+- Flujo de trabajo visual mediante un tablero Kanban para el seguimiento de pedidos desde la recepción hasta la entrega.
+- Clasificación por estados: Pendiente, Producción, Listos, Entregados y Cancelados.
+- Filtros rápidos por fecha y canal de venta.
+
+### 👥 CRM & Demografía
+- Base de datos centralizada de clientes con historial de compras.
+- Análisis demográfico automático para identificar zonas de mayor venta.
+- Sistema de detección de clientes inactivos para campañas de reactivación.
+
+### 🏆 Programa de Lealtad (King Candy Rewards)
+- **Acumulación de Puntos:** Los clientes ganan puntos por cada Tiramisú comprado (Bambino: 1, Mediano: 8, Grande: 11).
+- **Redención:** Canje de puntos por productos gratis con reglas de negocio estrictas (requiere compra adicional).
+- **Notificaciones WhatsApp:** Integración directa para notificar a los clientes sobre sus puntos acumulados y premios disponibles.
+
+### 🥗 Recetario & Costeo Estricto
+- Gestión detallada de insumos e ingredientes con precios actualizados.
+- **Costeo de Recetas:** Cálculo automático del costo estimado por porción y margen de utilidad.
+- **Vínculo Estricto:** Conexión relacional entre recetas, productos y sabores para garantizar la precisión en los reportes de costos.
+
+### 📊 Reportes e Inteligencia
+- Dashboard con KPIs en tiempo real (Ingresos, Pedidos, Tickets Promedio).
+- Exportación de reportes detallados en formatos Excel, PDF y XML.
+
+---
+
+## 🛠️ Stack Tecnológico
 
 | Capa | Tecnología |
 |------|-----------|
-| Frontend | React 18 + TypeScript (strict) |
-| UI | Ant Design 5 |
-| Build | Vite 5 + SWC |
-| Backend | Firebase (Auth, Firestore) |
-| Charts | Recharts |
-| Exports | jsPDF, xlsx |
-| PWA | vite-plugin-pwa |
+| **Frontend** | React 18 + TypeScript (strict) |
+| **UI Kit** | Ant Design 5 (Personalizado) |
+| **Build Tool** | Vite 5 + SWC |
+| **Estado & Cache** | React Query (TanStack Query) |
+| **Backend** | Firebase (Auth, Firestore, Hosting) |
+| **Gráficos** | Recharts |
+| **PWA** | Soporte Offline y modo App móvil |
 
-## Estructura del Proyecto
+---
+
+## 📂 Estructura del Proyecto
 
 ```
 src/
-├── components/
-│   ├── auth/          # AuthGate (Context + onAuthStateChanged)
-│   ├── layout/        # AppLayout (Sider + Header + Outlet)
-│   └── ErrorBoundary  # Catch-all para errores de render
+├── components/        # Componentes compartidos y Layout
 ├── features/
-│   ├── customers/     # CRUD de clientes + formulario
-│   ├── dashboard/     # KPIs, charts, insights, demografía
-│   ├── inventory/     # Stock, movimientos, planificación
-│   ├── orders/        # Kanban + Lista, formulario de pedidos
-│   ├── reports/       # Exportaciones Excel/PDF/XML
-│   └── settings/      # Catálogos (productos, sabores, canales)
-├── hooks/
-│   └── useFirestore   # Suscripción real-time + mutaciones
-├── services/
-│   └── exportService  # Lógica de exportación Excel/PDF/XML
-├── types/
-│   └── index.ts       # Interfaces, BaseEntity, ORDER_STATUSES
-└── utils/
-    ├── audit.ts       # Campos de auditoría (createdAt, updatedAt)
-    ├── dateHelpers.ts  # getOrderDate, toDay, getDeliveredOrdersInRange
-    └── demographicsHelpers.ts  # computeDemographics, getInactiveCustomers
+│   ├── auth/          # Gestión de autenticación
+│   ├── customers/     # CRM y Demografía
+│   ├── dashboard/     # Métricas y KPIs
+│   ├── inventory/     # Stock y movimientos de almacén
+│   ├── loyalty/       # Dashboard y reglas del programa de lealtad
+│   ├── orders/        # Tablero Kanban y formularios de pedidos
+│   ├── recetario/     # Insumos, recetas y cálculos de costos
+│   ├── reports/       # Lógica de exportación de datos
+│   └── settings/      # Configuración de catálogos y sistema
+├── hooks/             # Custom hooks (useFirestore, useIsMobile)
+├── services/          # Servicios externos (Exportación, Firebase)
+└── utils/             # Lógica de negocio (Loyalty rules, Helpers)
 ```
 
-## Configuración
+## ⚙️ Configuración
 
-1. Clona el repositorio
-2. Copia `.env.example` a `.env` y configura tus credenciales de Firebase:
-   ```
-   VITE_FIREBASE_API_KEY=...
-   VITE_FIREBASE_AUTH_DOMAIN=...
-   VITE_FIREBASE_PROJECT_ID=...
-   VITE_FIREBASE_STORAGE_BUCKET=...
-   VITE_FIREBASE_MESSAGING_SENDER_ID=...
-   VITE_FIREBASE_APP_ID=...
-   ```
-3. Instala dependencias:
+1. **Clonar repositorio**
+2. **Variables de Entorno:** Copia `.env.example` a `.env` y configura tus credenciales de Firebase.
+3. **Instalación:**
    ```bash
    npm install
    ```
 
-## Scripts
+## 📜 Scripts
 
 | Comando | Descripción |
 |---------|-------------|
-| `npm run dev` | Servidor de desarrollo (localhost:5173) |
-| `npm run build` | Build de producción (tsc + vite build) |
-| `npm run preview` | Preview del build local |
-| `firebase deploy` | Deploy a Firebase Hosting |
+| `npm run dev` | Inicia el entorno de desarrollo local. |
+| `npm run build` | Genera el build optimizado para producción. |
+| `npm run preview` | Previsualiza el build de producción localmente. |
+| `firebase deploy` | Despliega la aplicación a Firebase Hosting. |
 
-## Decisiones de Arquitectura
+## 🛡️ Decisiones de Arquitectura
 
-- **Firestore-level filtering**: Los documentos eliminados (`isDeleted: true`) se filtran a nivel de query, no en el cliente, ahorrando reads y bandwidth.
-- **React Context para Auth**: `useAuth()` usa `onAuthStateChanged` para mantenerse sincronizado con Firebase Auth en todo momento.
-- **ErrorBoundary**: Cualquier error de rendering muestra una pantalla de error amigable en vez de un crash.
-- **Shared utilities**: La lógica duplicada (parsing de fechas, demografía, exportaciones) se centralizó en `utils/` y `services/`.
-- **TypeScript strict**: El proyecto compila bajo `strict: true` con cero errores.
-- **Constants**: Los estados de pedido (`ORDER_STATUSES`, `KANBAN_STATUSES`) son constantes tipadas, no strings hardcodeados.
+- **PWA First**: Diseñado para ser instalado en dispositivos móviles para uso rápido en punto de venta.
+- **Firestore-level filtering**: Filtrado de registros borrados (`isDeleted`) a nivel de servidor para optimizar ancho de banda.
+- **Separación por Features**: Arquitectura modular que permite escalar funcionalidades de forma independiente.
+- **TypeScript Strict**: Tipado fuerte en todo el sistema para minimizar errores en producción.
 
-## Reglas de Firestore
+## 📄 Licencia
 
-```
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    match /users/{userId}/{document=**} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
-    }
-  }
-}
-```
-
-## Licencia
-
-Privado — Uso interno.
+Privado — Uso exclusivo para King Candy La Casa Del Tiramisú.

@@ -18,7 +18,7 @@ import {
 } from 'recharts';
 import dayjs from 'dayjs';
 import { useFirestoreSubscription } from '../../hooks/useFirestore';
-import { Order, Customer } from '../../types';
+import { Order, Customer, Recipe, Ingredient } from '../../types';
 import { getDeliveredOrdersInRange } from '../../utils/dateHelpers';
 import { computeDemographics } from '../../utils/demographicsHelpers';
 import {
@@ -37,6 +37,8 @@ const COLORS = ['#6366f1', '#ec4899', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6'
 export const ReportsPage = () => {
     const { data: orders } = useFirestoreSubscription<Order>('orders');
     const { data: customers } = useFirestoreSubscription<Customer>('customers');
+    const { data: recipes } = useFirestoreSubscription<Recipe>('recipes');
+    const { data: ingredients } = useFirestoreSubscription<Ingredient>('ingredients');
 
     const [dateRange, setDateRange] = useState<[dayjs.Dayjs, dayjs.Dayjs]>([
         dayjs().startOf('month'),
@@ -59,12 +61,12 @@ export const ReportsPage = () => {
     // ─── Handlers ─────────────────────────────────────────────────────
 
     const handleExcelExport = () => {
-        exportOrdersExcel(filteredOrders, customers);
+        exportOrdersExcel(filteredOrders, customers, recipes, ingredients);
         message.success('Archivo Excel generado');
     };
 
     const handlePdfExport = () => {
-        exportOrdersPDF(filteredOrders, dateRange);
+        exportOrdersPDF(filteredOrders, dateRange, recipes, ingredients);
         message.success('PDF generado');
     };
 

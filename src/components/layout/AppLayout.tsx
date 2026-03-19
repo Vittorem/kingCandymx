@@ -55,7 +55,6 @@ export const AppLayout = () => {
         menuItems[0], // Dashboard
         menuItems[2], // Pedidos
         menuItems[1], // Clientes
-        menuItems[4], // Inventario
     ];
 
     const userMenu = {
@@ -160,7 +159,7 @@ export const AppLayout = () => {
                         </div>
                     </div>
 
-                    {mobileTabItems.slice(2, 4).map(item => (
+                    {mobileTabItems.slice(2, 3).map(item => (
                         <div key={item.key} onClick={() => navigate(item.key)} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', color: location.pathname === item.key ? colorPrimary : '#8c8c8c', width: '20%', cursor: 'pointer', height: 44 }}>
                             <div style={{ fontSize: 22, height: 26, display: 'flex', alignItems: 'center' }}>{item.icon}</div>
                             <div style={{ fontSize: 10, marginTop: 2, fontWeight: location.pathname === item.key ? 600 : 400 }}>{item.label}</div>

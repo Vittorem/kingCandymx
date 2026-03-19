@@ -2,22 +2,30 @@ import dayjs from 'dayjs';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { Order, Customer } from '../types';
+import { Order, Customer, Recipe, Ingredient } from '../types';
 import { getOrderDate } from '../utils/dateHelpers';
+import { calculateOrderEstimatedCost } from '../utils/costHelpers';
 import { DemographicResult } from '../utils/demographicsHelpers';
 
 // ─── Excel Export ─────────────────────────────────────────────────────────────
 
-export function exportOrdersExcel(orders: Order[], customers: Customer[]) {
+export function exportOrdersExcel(orders: Order[], customers: Customer[], recipes: Recipe[], ingredients: Ingredient[]) {
     const ordersData = orders.map(o => {
         const date = getOrderDate(o);
+        const productTotal = o.total || 0;
+        const estCost = calculateOrderEstimatedCost(o, recipes, ingredients);
+        const netProfit = productTotal - estCost;
+
         return {
             Fecha: date ? date.format('YYYY-MM-DD') : 'N/A',
             Cliente: o.customerName,
             Producto: o.items && o.items.length > 0 ? o.items.map(i => i.productNameAtSale).join(', ') : o.productNameAtSale,
             Sabor: o.items && o.items.length > 0 ? o.items.map(i => i.flavorNameAtSale).join(', ') : o.flavorNameAtSale,
             Cantidad: o.items && o.items.length > 0 ? o.items.reduce((acc, curr) => acc + (curr.quantity || 1), 0) : (o.quantity || 1),
-            Total: o.total,
+            TotalVenta: productTotal,
+            CostoDirecto: estCost,
+            GananciaNeta: netProfit,
+            MargenPorcentaje: productTotal > 0 ? ((netProfit / productTotal) * 100).toFixed(1) + '%' : '0%',
             Estado: o.status,
         };
     });
@@ -41,7 +49,9 @@ export function exportOrdersExcel(orders: Order[], customers: Customer[]) {
 
 export function exportOrdersPDF(
     orders: Order[],
-    dateRange: [dayjs.Dayjs, dayjs.Dayjs]
+    dateRange: [dayjs.Dayjs, dayjs.Dayjs],
+    recipes: Recipe[],
+    ingredients: Ingredient[]
 ) {
     const doc = new jsPDF();
     doc.text(
@@ -51,9 +61,22 @@ export function exportOrdersPDF(
     );
 
     const totalSales = orders.reduce((acc, curr) => acc + curr.total, 0);
+    const totalCosts = orders.reduce((acc, curr) => acc + calculateOrderEstimatedCost(curr, recipes, ingredients), 0);
+    const netProfit = totalSales - totalCosts;
+    const profitMargin = totalSales > 0 ? ((netProfit / totalSales) * 100).toFixed(1) : 0;
+
+    doc.setFontSize(10);
+    doc.setTextColor(100);
+    doc.text(`Total Pedidos Entregados: ${orders.length}`, 14, 28);
+    
     doc.setFontSize(12);
-    doc.text(`Total Ventas: $${totalSales.toFixed(2)}`, 14, 30);
-    doc.text(`Total Pedidos: ${orders.length}`, 14, 38);
+    doc.setTextColor(0);
+    doc.text(`Ventas Brutas: $${totalSales.toFixed(2)}`, 14, 35);
+    doc.setTextColor(220, 38, 38); // Red-ish for costs
+    doc.text(`Costos Operativos: $${totalCosts.toFixed(2)}`, 60, 35);
+    doc.setTextColor(22, 163, 74); // Green for profit
+    doc.text(`Ganancia Neta: $${netProfit.toFixed(2)}  (${profitMargin}%)`, 115, 35);
+    doc.setTextColor(0);
 
     const tableData = orders.map(o => {
         const date = getOrderDate(o);
@@ -74,7 +97,7 @@ export function exportOrdersPDF(
     autoTable(doc, {
         head: [['Fecha', 'Cliente', 'Producto', 'Qty', 'Total']],
         body: tableData,
-        startY: 45,
+        startY: 42,
     });
 
     doc.save(`Corte_${dayjs().format('YYYYMMDD')}.pdf`);
