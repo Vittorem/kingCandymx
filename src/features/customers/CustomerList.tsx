@@ -118,15 +118,15 @@ export const CustomerList = () => {
 
     return (
         <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
-                <h2>Clientes</h2>
-                <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16, padding: isMobile ? '0 16px' : 0 }}>
+                {!isMobile && <h2>Clientes</h2>}
+                <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd} style={{ width: isMobile ? '100%' : 'auto' }}>
                     Nuevo Cliente
                 </Button>
             </div>
 
-            <Card>
-                <div style={{ marginBottom: 16 }}>
+            <Card bodyStyle={{ padding: isMobile ? 0 : 24 }} bordered={!isMobile} style={{ background: isMobile ? 'transparent' : '#fff', boxShadow: 'none' }}>
+                <div style={{ marginBottom: 16, padding: isMobile ? '0 16px' : 0 }}>
                     <Input
                         prefix={<SearchOutlined />}
                         placeholder="Buscar por nombre o teléfono..."
@@ -140,26 +140,37 @@ export const CustomerList = () => {
                 ) : isMobile ? (
                     <AntList
                         dataSource={filteredData}
+                        style={{ background: '#fff' }}
                         renderItem={item => (
-                            <Card size="small" style={{ marginBottom: 8 }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                                    <strong style={{ fontSize: 16 }}>{item.fullName}</strong>
-                                    <Tag color={(item.loyaltyPoints || 0) >= 6 ? 'gold' : 'blue'}>{item.loyaltyPoints || 0} pts</Tag>
+                            <div style={{ 
+                                padding: '12px 16px', 
+                                borderBottom: '1px solid #f0f0f0',
+                                display: 'flex', 
+                                flexDirection: 'column',
+                                gap: 4
+                            }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <strong style={{ fontSize: 16, color: '#333' }}>{item.fullName}</strong>
+                                    <Tag color={(item.loyaltyPoints || 0) >= 6 ? 'gold' : 'blue'} style={{ margin: 0 }}>
+                                        {item.loyaltyPoints || 0} pts
+                                    </Tag>
                                 </div>
-                                <div style={{ color: '#666', fontSize: 14 }}>
-                                    <div>📱 {item.phone}</div>
-                                    <div style={{ margin: '4px 0' }}>🗣️ {item.mainContactMethod}</div>
-                                    <div>{item.tags && item.tags.length > 0 && item.tags.map(t => <Tag key={t} style={{ fontSize: 11, padding: '0 4px' }}>{t}</Tag>)}</div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 }}>
+                                    <span style={{ color: '#666', fontSize: 14 }}>{item.phone}</span>
+                                    <span style={{ fontSize: 12, color: '#888' }}>{item.mainContactMethod}</span>
                                 </div>
-                                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 12 }}>
-                                    <Space>
-                                        <Button icon={<EditOutlined />} onClick={() => handleEdit(item)} />
-                                        <Popconfirm title="¿Eliminar cliente?" description="Esto es una eliminación lógica." onConfirm={() => handleDelete(item.id)}>
-                                            <Button icon={<DeleteOutlined />} danger />
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
+                                    <div style={{ flex: 1, overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
+                                        {item.tags?.map(t => <Tag key={t} style={{ fontSize: 11, padding: '0 4px', margin: '0 4px 0 0' }}>{t}</Tag>)}
+                                    </div>
+                                    <Space size="middle">
+                                        <Button type="text" style={{ padding: 0, color: '#1890ff' }} icon={<EditOutlined />} onClick={() => handleEdit(item)} />
+                                        <Popconfirm title="¿Eliminar cliente?" description="Confirmar eliminación lógica." onConfirm={() => handleDelete(item.id)}>
+                                            <Button type="text" style={{ padding: 0, color: '#ff4d4f' }} icon={<DeleteOutlined />} danger />
                                         </Popconfirm>
                                     </Space>
                                 </div>
-                            </Card>
+                            </div>
                         )}
                     />
                 ) : (

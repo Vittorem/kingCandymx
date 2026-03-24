@@ -84,19 +84,21 @@ export const OrderList = ({ orders, onEdit, onDelete, onStatusChange }: OrderLis
 
     return (
         <div>
-            <Space style={{ marginBottom: 16, display: 'flex', flexWrap: 'wrap' }}>
-                <Input placeholder="Buscar cliente..." onChange={e => setSearchText(e.target.value)} style={{ width: isMobile ? '100%' : 200 }} />
-                <Select
-                    placeholder="Filtrar Estado"
-                    allowClear
-                    style={{ width: isMobile ? '100%' : 150 }}
-                    onChange={setStatusFilter}
-                >
-                    {ORDER_STATUSES.map(s => (
-                        <Select.Option key={s} value={s}>{s}</Select.Option>
-                    ))}
-                </Select>
-            </Space>
+            {!isMobile && (
+                <Space style={{ marginBottom: 16, display: 'flex', flexWrap: 'wrap' }}>
+                    <Input placeholder="Buscar cliente..." onChange={e => setSearchText(e.target.value)} style={{ width: 200 }} />
+                    <Select
+                        placeholder="Filtrar Estado"
+                        allowClear
+                        style={{ width: 150 }}
+                        onChange={setStatusFilter}
+                    >
+                        {ORDER_STATUSES.map(s => (
+                            <Select.Option key={s} value={s}>{s}</Select.Option>
+                        ))}
+                    </Select>
+                </Space>
+            )}
             {isMobile ? (
                 <SwipeableList threshold={0.3}>
                     <AntList
@@ -133,23 +135,39 @@ export const OrderList = ({ orders, onEdit, onDelete, onStatusChange }: OrderLis
                                     leadingActions={item.status !== 'Entregado' ? leadingActions() : undefined}
                                     trailingActions={trailingActions()}
                                 >
-                                    <Card size="small" style={{ marginBottom: 8, width: '100%' }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                                            <strong style={{ fontSize: 16 }}>{item.customerName}</strong>
-                                            <Tag color={item.status === 'Entregado' ? 'green' : 'blue'}>{item.status}</Tag>
+                                    <Card 
+                                        size="small" 
+                                        style={{ 
+                                            marginBottom: 12, 
+                                            width: '100%', 
+                                            borderRadius: 12, 
+                                            boxShadow: '0 4px 12px rgba(0,0,0,0.05)', 
+                                            border: '1px solid #f0f0f0' 
+                                        }}
+                                        bodyStyle={{ padding: '16px' }}
+                                    >
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12, alignItems: 'flex-start' }}>
+                                            <strong style={{ fontSize: 16, lineHeight: 1.2, color: '#333' }}>{item.customerName}</strong>
+                                            <Tag style={{ margin: 0, borderRadius: 12, fontWeight: 600 }} color={
+                                                item.status === 'Pendiente' ? 'orange' :
+                                                item.status === 'Confirmado' ? 'geekblue' :
+                                                item.status === 'En preparación' ? 'purple' :
+                                                item.status === 'Listo para entregar' ? 'cyan' :
+                                                item.status === 'Entregado' ? 'green' : 'red'
+                                            }>{item.status}</Tag>
                                         </div>
-                                        <div style={{ color: '#666', fontSize: 13, marginBottom: 8 }}>
+                                        <div style={{ color: '#555', fontSize: 14, marginBottom: 12, display: 'flex', flexDirection: 'column', gap: 6 }}>
                                             <div>📅 {toDay(item.deliveryDate)?.format('DD/MM/YYYY HH:mm')}</div>
                                             <div>📦 {item.items && item.items.length > 0
                                                 ? item.items.map(i => `${i.quantity}x ${i.productNameAtSale}`).join(', ')
                                                 : `${item.quantity || 1}x ${item.productNameAtSale}`}
                                             </div>
                                         </div>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 }}>
-                                            <strong style={{ fontSize: 16 }}>${item.total.toFixed(2)}</strong>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 12, paddingTop: 12, borderTop: '1px solid #f0f0f0' }}>
+                                            <strong style={{ fontSize: 18, color: '#333' }}>${item.total.toFixed(2)}</strong>
                                             <Space>
-                                                <Button icon={<EditOutlined />} onClick={() => onEdit(item)} />
-                                                <Button icon={<DeleteOutlined />} danger onClick={() => onDelete(item.id)} />
+                                                <Button type="text" style={{ background: '#f5f5f5', color: '#1890ff', border: 'none' }} icon={<EditOutlined />} onClick={() => onEdit(item)} />
+                                                <Button type="text" style={{ background: '#fff1f0', color: '#ff4d4f', border: 'none' }} icon={<DeleteOutlined />} onClick={() => onDelete(item.id)} />
                                             </Space>
                                         </div>
                                     </Card>

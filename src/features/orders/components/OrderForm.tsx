@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Drawer, Form, Select, DatePicker, InputNumber, Radio, Divider, Input, Button, Space, Typography, Row, Col, Alert, Checkbox, Grid } from 'antd';
+import { Drawer, Form, Select, DatePicker, InputNumber, Radio, Divider, Input, Button, Space, Typography, Row, Col, Alert, Checkbox, Grid, TimePicker } from 'antd';
 import { PlusOutlined, DeleteOutlined } from '@ant-design/icons';
 import { useFirestoreSubscription } from '../../../hooks/useFirestore';
 import { Customer, Product, Flavor, Channel, Order, ORDER_STATUSES, OrderItem, SystemSettings } from '../../../types';
@@ -80,6 +80,7 @@ export const OrderForm = ({ open, onClose, onSubmit, initialValues, loading }: O
                 form.setFieldsValue({
                     ...initialValues,
                     deliveryDate,
+                    deliveryTime: deliveryDate,
                     items: initialItems,
                 });
                 calculateTotals(form.getFieldsValue());
@@ -93,6 +94,7 @@ export const OrderForm = ({ open, onClose, onSubmit, initialValues, loading }: O
                     deliveryMethod: 'Recoge',
                     discountType: 'AMOUNT',
                     deliveryDate: dayjs(),
+                    deliveryTime: dayjs(),
                 });
             }
         }
@@ -232,10 +234,12 @@ export const OrderForm = ({ open, onClose, onSubmit, initialValues, loading }: O
                 };
             });
 
+            const finalDate = values.deliveryDate.hour(values.deliveryTime ? values.deliveryTime.hour() : 0).minute(values.deliveryTime ? values.deliveryTime.minute() : 0).toDate();
+
             const payload: Partial<Order> = {
                 ...values,
                 customerName: customer?.fullName || 'Desconocido',
-                deliveryDate: values.deliveryDate.toDate(),
+                deliveryDate: finalDate,
                 items: structuredItems,
                 productId: structuredItems[0]?.productId || '',
                 productNameAtSale: structuredItems[0]?.productNameAtSale || '',
@@ -273,7 +277,7 @@ export const OrderForm = ({ open, onClose, onSubmit, initialValues, loading }: O
         >
             <Form form={form} layout="vertical" onValuesChange={onValuesChange} requiredMark={false}>
                 <Row gutter={16}>
-                    <Col span={12}>
+                    <Col xs={24} md={12}>
                         <Form.Item name="customerId" label="Cliente" rules={[{ required: true }]}>
                             <Select showSearch optionFilterProp="children" placeholder="Selecciona Cliente">
                                 {customers.filter(c => c.isActive !== false).map(c => (
@@ -282,7 +286,7 @@ export const OrderForm = ({ open, onClose, onSubmit, initialValues, loading }: O
                             </Select>
                         </Form.Item>
                     </Col>
-                    <Col span={12}>
+                    <Col xs={24} md={12}>
                         <Form.Item name="channelId" label="Canal de Venta" rules={[{ required: true }]}>
                             <Select placeholder="Selecciona Canal">
                                 {channels.filter(c => c.isActive).map(c => (
@@ -318,7 +322,7 @@ export const OrderForm = ({ open, onClose, onSubmit, initialValues, loading }: O
                             {fields.map(({ key, name, ...restField }, index) => (
                                 <div key={key} style={{ background: '#fafafa', padding: '16px 16px 0', marginBottom: 16, borderRadius: 8, border: '1px solid #f0f0f0', position: 'relative' }}>
                                     <Row gutter={16}>
-                                        <Col span={8}>
+                                        <Col xs={24} md={8}>
                                             <Form.Item {...restField} name={[name, 'productId']} label="Producto" rules={[{ required: true }]}>
                                                 <Select onChange={(val) => handleProductChange(val, index)} placeholder="Producto">
                                                     {products.filter(p => p.isActive).map(p => (
@@ -328,7 +332,7 @@ export const OrderForm = ({ open, onClose, onSubmit, initialValues, loading }: O
                                             </Form.Item>
                                             <Form.Item {...restField} name={[name, 'productNameAtSale']} hidden><Input /></Form.Item>
                                         </Col>
-                                        <Col span={8}>
+                                        <Col xs={24} md={8}>
                                             <Form.Item {...restField} name={[name, 'flavorId']} label="Sabor" rules={[{ required: true }]}>
                                                 <Select placeholder="Sabor">
                                                     {flavors.filter(f => f.isActive).map(f => (
@@ -338,19 +342,19 @@ export const OrderForm = ({ open, onClose, onSubmit, initialValues, loading }: O
                                             </Form.Item>
                                             <Form.Item {...restField} name={[name, 'flavorNameAtSale']} hidden><Input /></Form.Item>
                                         </Col>
-                                        <Col span={8}>
+                                        <Col xs={24} md={8}>
                                             <Form.Item {...restField} name={[name, 'quantity']} label="Cantidad" rules={[{ required: true }]}>
                                                 <InputNumber min={1} style={{ width: '100%' }} />
                                             </Form.Item>
                                         </Col>
                                     </Row>
                                     <Row gutter={16}>
-                                        <Col span={8}>
+                                        <Col xs={24} md={8}>
                                             <Form.Item {...restField} name={[name, 'unitPriceAtSale']} label="Precio Unitario">
                                                 <InputNumber prefix="$" style={{ width: '100%' }} />
                                             </Form.Item>
                                         </Col>
-                                        <Col span={8}>
+                                        <Col xs={24} md={8}>
                                             {(() => {
                                                 if (!isLoyaltyEnabled) return null;
                                                 const pId = form.getFieldValue(['items', name, 'productId']);
@@ -376,7 +380,7 @@ export const OrderForm = ({ open, onClose, onSubmit, initialValues, loading }: O
                                                 return null;
                                             })()}
                                         </Col>
-                                        <Col span={8}>
+                                        <Col xs={24} md={8}>
                                             {fields.length > 1 && (
                                                 <div style={{ textAlign: 'right', marginTop: 32 }}>
                                                     <Button danger type="text" icon={<DeleteOutlined />} onClick={() => remove(name)}>
@@ -398,7 +402,7 @@ export const OrderForm = ({ open, onClose, onSubmit, initialValues, loading }: O
                 </Form.List>
 
                 <Row gutter={16}>
-                    <Col span={24}>
+                    <Col xs={24}>
                         <div style={{ padding: '0 0 24px', textAlign: 'right' }}>
                             <Text strong>Subtotal Bruto: ${totals.subtotal.toFixed(2)}</Text>
                         </div>
@@ -408,12 +412,19 @@ export const OrderForm = ({ open, onClose, onSubmit, initialValues, loading }: O
                 <Divider orientation="left">Entrega & Cobro</Divider>
 
                 <Row gutter={16}>
-                    <Col span={8}>
-                        <Form.Item name="deliveryDate" label="Fecha Entrega" rules={[{ required: true }]}>
-                            <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY HH:mm" showTime />
+                    <Col xs={24} md={8}>
+                        <Form.Item label="Fecha y Hora Entrega" required style={{ marginBottom: 0 }}>
+                            <Space wrap>
+                                <Form.Item name="deliveryDate" rules={[{ required: true }]} style={{ marginBottom: 0 }}>
+                                    <DatePicker style={{ width: '100%', minWidth: 130 }} format="DD/MM/YYYY" placeholder="Fecha" />
+                                </Form.Item>
+                                <Form.Item name="deliveryTime" rules={[{ required: true }]} style={{ marginBottom: 0 }}>
+                                    <TimePicker style={{ width: '100%', minWidth: 100 }} format="HH:mm" placeholder="Hora" />
+                                </Form.Item>
+                            </Space>
                         </Form.Item>
                     </Col>
-                    <Col span={8}>
+                    <Col xs={24} md={8}>
                         <Form.Item name="deliveryMethod" label="Método">
                             <Radio.Group>
                                 <Radio value="Recoge">Recoge</Radio>
@@ -421,7 +432,7 @@ export const OrderForm = ({ open, onClose, onSubmit, initialValues, loading }: O
                             </Radio.Group>
                         </Form.Item>
                     </Col>
-                    <Col span={8}>
+                    <Col xs={24} md={8}>
                         <Form.Item name="shippingCost" label="Costo Envío">
                             <InputNumber prefix="$" min={0} style={{ width: '100%' }} />
                         </Form.Item>
@@ -429,7 +440,7 @@ export const OrderForm = ({ open, onClose, onSubmit, initialValues, loading }: O
                 </Row>
 
                 <Row gutter={16}>
-                    <Col span={8}>
+                    <Col xs={24} md={8}>
                         <Form.Item name="discountType" label="Tipo Descuento">
                             <Select>
                                 <Option value="AMOUNT">Monto ($)</Option>
@@ -437,12 +448,12 @@ export const OrderForm = ({ open, onClose, onSubmit, initialValues, loading }: O
                             </Select>
                         </Form.Item>
                     </Col>
-                    <Col span={8}>
+                    <Col xs={24} md={8}>
                         <Form.Item name="discountValue" label="Valor Descuento">
                             <InputNumber min={0} style={{ width: '100%' }} />
                         </Form.Item>
                     </Col>
-                    <Col span={8}>
+                    <Col xs={24} md={8}>
                         <div style={{ padding: '30px 0', color: 'red' }}>
                             Descuento Final: -${totals.discount.toFixed(2)}
                             {loyaltyDiscount > 0 && <span style={{ display: 'block' }}>Lealtad: -${loyaltyDiscount.toFixed(2)}</span>}
@@ -451,12 +462,12 @@ export const OrderForm = ({ open, onClose, onSubmit, initialValues, loading }: O
                 </Row>
 
                 <Row gutter={16}>
-                    <Col span={8}>
+                    <Col xs={24} md={8}>
                         <Form.Item name="extraCharges" label="Cargos Extra">
                             <InputNumber prefix="$" min={0} style={{ width: '100%' }} />
                         </Form.Item>
                     </Col>
-                    <Col span={16}>
+                    <Col xs={24} md={16}>
                         <Form.Item name="extraChargesReason" label="Motivo Cargo Extra">
                             <Input placeholder="Ej. Empaque especial" />
                         </Form.Item>

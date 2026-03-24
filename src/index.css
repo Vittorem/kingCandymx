@@ -37,3 +37,15 @@ body {
   padding: 8px 12px !important;
   font-size: 13px;
 }
+
+/* DatePicker Mobile Fix */
+@media (max-width: 500px) {
+  .ant-picker-dropdown .ant-picker-panel-layout {
+    flex-direction: column !important;
+  }
+  .ant-picker-dropdown .ant-picker-time-panel {
+    border-left: none !important;
+    border-top: 1px solid rgba(5, 5, 5, 0.06) !important;
+    width: 100% !important;
+  }
+}

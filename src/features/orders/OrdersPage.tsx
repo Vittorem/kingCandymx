@@ -193,9 +193,11 @@ export const OrdersPage = () => {
                 </Button>
             </div>
 
-            <div style={{ marginBottom: 16 }}>
-                <OrderSummary orders={filteredOrders} />
-            </div>
+            {!isMobile && (
+                <div style={{ marginBottom: 16 }}>
+                    <OrderSummary orders={filteredOrders} />
+                </div>
+            )}
 
             {loadingOrders || loadingCustomers ? (
                 <div style={{ padding: 24 }}><Skeleton active paragraph={{ rows: 8 }} /></div>
@@ -207,7 +209,7 @@ export const OrdersPage = () => {
                 />
             ) : (
                 <OrderList
-                    orders={filteredOrders}
+                    orders={isMobile ? filteredOrders.filter(o => o.status !== 'Entregado') : filteredOrders}
                     onEdit={handleEdit}
                     onDelete={handleDelete}
                     onStatusChange={handleStatusChange}
