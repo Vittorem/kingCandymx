@@ -17,6 +17,7 @@ import {
     MoonOutlined,
     PlusOutlined,
     BookOutlined,
+    SendOutlined,
 } from '@ant-design/icons';
 import { useAuth } from '../auth/AuthGate';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
@@ -44,6 +45,7 @@ export const AppLayout = () => {
         { key: '/', icon: <AppstoreOutlined />, label: 'Dashboard' },
         { key: '/customers', icon: <UserOutlined />, label: 'Clientes' },
         { key: '/orders', icon: <ShoppingOutlined />, label: 'Pedidos' },
+        { key: '/b2b-deliveries', icon: <SendOutlined />, label: 'Entregas B2B' },
         { key: '/loyalty', icon: <TrophyOutlined />, label: 'Lealtad' },
         { key: '/inventory', icon: <InboxOutlined />, label: 'Inventario' },
         { key: '/recetario', icon: <BookOutlined />, label: 'Recetario' },

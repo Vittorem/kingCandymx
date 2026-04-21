@@ -12,13 +12,14 @@ interface OrderFormProps {
     onSubmit: (values: Partial<Order>) => Promise<void>;
     initialValues?: Order | null;
     loading?: boolean;
+    prefillCustomerId?: string | null;
 }
 
 const { Option } = Select;
 const { Text } = Typography;
 const { TextArea } = Input;
 
-export const OrderForm = ({ open, onClose, onSubmit, initialValues, loading }: OrderFormProps) => {
+export const OrderForm = ({ open, onClose, onSubmit, initialValues, loading, prefillCustomerId }: OrderFormProps) => {
     const [form] = Form.useForm();
 
     const { useBreakpoint } = Grid;
@@ -95,6 +96,7 @@ export const OrderForm = ({ open, onClose, onSubmit, initialValues, loading }: O
                     discountType: 'AMOUNT',
                     deliveryDate: dayjs(),
                     deliveryTime: dayjs(),
+                    ...(prefillCustomerId ? { customerId: prefillCustomerId } : {}),
                 });
             }
         }
@@ -236,8 +238,10 @@ export const OrderForm = ({ open, onClose, onSubmit, initialValues, loading }: O
 
             const finalDate = values.deliveryDate.hour(values.deliveryTime ? values.deliveryTime.hour() : 0).minute(values.deliveryTime ? values.deliveryTime.minute() : 0).toDate();
 
+            const { deliveryTime, ...restValues } = values as Record<string, any>;
+
             const payload: Partial<Order> = {
-                ...values,
+                ...restValues,
                 customerName: customer?.fullName || 'Desconocido',
                 deliveryDate: finalDate,
                 items: structuredItems,

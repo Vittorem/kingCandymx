@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Button, Segmented, message, DatePicker, Modal, Skeleton } from 'antd';
-import { PlusOutlined, UnorderedListOutlined, AppstoreOutlined } from '@ant-design/icons';
+import { PlusOutlined, UnorderedListOutlined, AppstoreOutlined, SendOutlined } from '@ant-design/icons';
 import { useFirestoreSubscription, useFirestoreMutation } from '../../hooks/useFirestore';
-import { Order, OrderStatus, Customer, SystemSettings } from '../../types';
+import { Order, OrderStatus, Customer, SystemSettings, B2BDeliverySchedule } from '../../types';
 import { OrderForm } from './components/OrderForm';
 import { OrderKanbanBoard } from './components/OrderKanbanBoard';
 import { OrderSummary } from './components/OrderSummary';
@@ -12,6 +12,8 @@ import dayjs from 'dayjs';
 import { increment } from 'firebase/firestore';
 import { calculateProductPoints, LOYALTY_RULES, getPointsCostForProduct, getLoyaltyRewardSummary } from '../../utils/loyalty';
 import { useIsMobile } from '../../hooks/useIsMobile';
+import { useLocation } from 'react-router-dom';
+import { getPendingB2BAlerts } from '../../utils/b2bAlerts';
 
 
 export const OrdersPage = () => {
@@ -21,19 +23,42 @@ export const OrdersPage = () => {
     const { update: updateCustomer } = useFirestoreMutation('customers');
     const { add: addLoyalty } = useFirestoreMutation('loyalty_ledger');
     const { data: settings } = useFirestoreSubscription<SystemSettings>('settings');
+    const { data: b2bSchedules } = useFirestoreSubscription<B2BDeliverySchedule>('b2b_schedules');
 
     const isMobile = useIsMobile();
+    const location = useLocation();
 
     const [viewMode, setViewMode] = useState<'Kanban' | 'List'>('Kanban');
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [editingOrder, setEditingOrder] = useState<Order | null>(null);
     const [selectedMonth, setSelectedMonth] = useState(dayjs());
+    const [prefillCustomerId, setPrefillCustomerId] = useState<string | null>(null);
+
+    // Handle navigation state for creating orders from B2B alerts
+    useEffect(() => {
+        const state = location.state as { createNew?: boolean; prefillCustomerId?: string } | null;
+        if (state?.createNew) {
+            if (state.prefillCustomerId) {
+                setPrefillCustomerId(state.prefillCustomerId);
+            }
+            setEditingOrder(null);
+            setIsFormOpen(true);
+            // Clean navigation state
+            window.history.replaceState({}, document.title);
+        }
+    }, [location.state]);
+
+    // B2B delivery alerts
+    const pendingB2BAlerts = useMemo(() => {
+        return getPendingB2BAlerts(b2bSchedules, orders);
+    }, [b2bSchedules, orders]);
 
     const loyaltySettings = settings[0];
     const isLoyaltyEnabled = loyaltySettings ? loyaltySettings.loyaltyEnabled : true;
 
-    const handleCreate = () => {
+    const handleCreate = (customerId?: string) => {
         setEditingOrder(null);
+        setPrefillCustomerId(customerId || null);
         setIsFormOpen(true);
     };
 
@@ -188,14 +213,108 @@ export const OrdersPage = () => {
 
                     />
                 </div>
-                <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate} style={{ width: isMobile ? '100%' : 'auto' }}>
+                <Button type="primary" icon={<PlusOutlined />} onClick={() => handleCreate()} style={{ width: isMobile ? '100%' : 'auto' }}>
                     Nuevo Pedido
                 </Button>
             </div>
 
+            {/* B2B Delivery Alert Banner */}
+            {pendingB2BAlerts.length > 0 && (
+                <div style={{
+                    background: 'linear-gradient(135deg, #fff7e6 0%, #fffbe6 100%)',
+                    border: '1px solid #ffe58f',
+                    borderRadius: 10,
+                    padding: isMobile ? '10px 12px' : '12px 16px',
+                    marginBottom: 16,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 8,
+                }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 600, color: '#d48806', fontSize: 14 }}>
+                        <SendOutlined /> Entregas B2B Pendientes
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        {pendingB2BAlerts.map(alert => (
+                            <div
+                                key={`${alert.schedule.id}-${alert.urgency}`}
+                                style={{
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center',
+                                    background: '#fff',
+                                    borderRadius: 8,
+                                    padding: '8px 12px',
+                                    border: alert.urgency === 'today' ? '1px solid #ff7a45' : '1px solid #ffd591',
+                                }}
+                            >
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                    <span style={{ fontWeight: 500 }}>{alert.schedule.customerName}</span>
+                                    <span style={{
+                                        fontSize: 11,
+                                        padding: '1px 8px',
+                                        borderRadius: 10,
+                                        fontWeight: 600,
+                                        background: alert.urgency === 'today' ? '#fff2e8' : '#fffbe6',
+                                        color: alert.urgency === 'today' ? '#d4380d' : '#d48806',
+                                        border: `1px solid ${alert.urgency === 'today' ? '#ffbb96' : '#ffe58f'}`,
+                                    }}>
+                                        {alert.urgency === 'today' ? `HOY ${alert.deliveryDay}` : `Mañana ${alert.deliveryDay}`}
+                                    </span>
+                                </div>
+                                <Button
+                                    type="primary"
+                                    size="small"
+                                    onClick={() => handleCreate(alert.schedule.customerId)}
+                                    style={{ borderRadius: 6 }}
+                                >
+                                    Crear Pedido
+                                </Button>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
             {!isMobile && (
                 <div style={{ marginBottom: 16 }}>
                     <OrderSummary orders={filteredOrders} />
+                </div>
+            )}
+
+            {/* #2 — Compact mobile summary */}
+            {isMobile && !loadingOrders && (
+                <div style={{ display: 'flex', gap: 8, marginBottom: 12, overflowX: 'auto', paddingBottom: 2 }}>
+                    {(() => {
+                        const mobileOrders = filteredOrders.filter(o => o.status !== 'Entregado');
+                        const ready = mobileOrders.filter(o => o.status === 'Listo para entregar').length;
+                        const inPrep = mobileOrders.filter(o => o.status === 'En preparación').length;
+                        const confirmed = mobileOrders.filter(o => o.status === 'Confirmado').length;
+                        const pending = mobileOrders.filter(o => o.status === 'Pendiente').length;
+                        return (
+                            <>
+                                <div style={{ background: '#e6fffb', border: '1px solid #87e8de', borderRadius: 8, padding: '6px 12px', textAlign: 'center', minWidth: 70, flexShrink: 0 }}>
+                                    <div style={{ fontSize: 18, fontWeight: 700, color: '#13c2c2' }}>{ready}</div>
+                                    <div style={{ fontSize: 10, color: '#006d75' }}>Listos</div>
+                                </div>
+                                <div style={{ background: '#f9f0ff', border: '1px solid #d3adf7', borderRadius: 8, padding: '6px 12px', textAlign: 'center', minWidth: 70, flexShrink: 0 }}>
+                                    <div style={{ fontSize: 18, fontWeight: 700, color: '#722ed1' }}>{inPrep}</div>
+                                    <div style={{ fontSize: 10, color: '#531dab' }}>Preparando</div>
+                                </div>
+                                <div style={{ background: '#f0f5ff', border: '1px solid #adc6ff', borderRadius: 8, padding: '6px 12px', textAlign: 'center', minWidth: 70, flexShrink: 0 }}>
+                                    <div style={{ fontSize: 18, fontWeight: 700, color: '#2f54eb' }}>{confirmed}</div>
+                                    <div style={{ fontSize: 10, color: '#1d39c4' }}>Confirmados</div>
+                                </div>
+                                <div style={{ background: '#fff7e6', border: '1px solid #ffd591', borderRadius: 8, padding: '6px 12px', textAlign: 'center', minWidth: 70, flexShrink: 0 }}>
+                                    <div style={{ fontSize: 18, fontWeight: 700, color: '#fa8c16' }}>{pending}</div>
+                                    <div style={{ fontSize: 10, color: '#d46b08' }}>Pendientes</div>
+                                </div>
+                                <div style={{ background: '#fafafa', border: '1px solid #d9d9d9', borderRadius: 8, padding: '6px 12px', textAlign: 'center', minWidth: 70, flexShrink: 0 }}>
+                                    <div style={{ fontSize: 18, fontWeight: 700, color: '#333' }}>{mobileOrders.length}</div>
+                                    <div style={{ fontSize: 10, color: '#888' }}>Total</div>
+                                </div>
+                            </>
+                        );
+                    })()}
                 </div>
             )}
 
@@ -218,9 +337,10 @@ export const OrdersPage = () => {
 
             <OrderForm
                 open={isFormOpen}
-                onClose={() => setIsFormOpen(false)}
+                onClose={() => { setIsFormOpen(false); setPrefillCustomerId(null); }}
                 onSubmit={handleSubmit}
                 initialValues={editingOrder}
+                prefillCustomerId={prefillCustomerId}
             />
         </div>
     );

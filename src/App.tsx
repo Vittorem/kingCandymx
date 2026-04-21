@@ -15,6 +15,7 @@ import { LoyaltyDashboardPage } from './features/loyalty/LoyaltyDashboardPage';
 import { InventoryPage } from './features/inventory/InventoryPage';
 import { ReportsPage } from './features/reports/ReportsPage';
 import { RecetarioPage } from './features/recetario/RecetarioPage';
+import { B2BDeliveriesPage } from './features/b2b-deliveries/B2BDeliveriesPage';
 
 const queryClient = new QueryClient();
 
@@ -85,6 +86,7 @@ function App() {
                                         <Route index element={<DashboardPage />} />
                                         <Route path="customers" element={<CustomerList />} />
                                         <Route path="orders" element={<OrdersPage />} />
+                                        <Route path="b2b-deliveries" element={<B2BDeliveriesPage />} />
                                         <Route path="loyalty" element={<LoyaltyDashboardPage />} />
                                         <Route path="reports" element={<ReportsPage />} />
                                         <Route path="inventory" element={<InventoryPage />} />

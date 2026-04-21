@@ -120,3 +120,21 @@ dist
 # Vite
 dist-ssr
 *.local
+
+# Firebase cache
+.firebase/
+
+# Firebase project config (exposes Project ID)
+.firebaserc
+
+# Build & debug output files
+build_output*.txt
+build_output_utf8.txt
+knip_output*.txt
+knip_output_utf8.txt
+knip_post.txt
+lint_output.txt
+
+# Claude AI assistant files
+.claude/
+CLAUDE.md
