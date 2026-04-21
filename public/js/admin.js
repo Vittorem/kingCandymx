@@ -2,7 +2,9 @@ import { SUPPORTED_LANGS, translatePage, resolveLanguage, t } from "./i18n.js";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js";
 import { getFirestore, doc, getDoc, setDoc, updateDoc, increment, onSnapshot } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
 
-const PASSCODE = "Victor+1094";
+// ⚠️  IMPORTANTE: Cambia este passcode antes de usar en producción.
+// No subas una contraseña real aquí — este archivo es público en GitHub.
+const PASSCODE = "CHANGE_ME";
 const PASSCODE_FLAG = "kc_admin";
 const SOLD_FALLBACK = 261;
 

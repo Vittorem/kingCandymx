@@ -1,633 +1,1207 @@
 <!DOCTYPE html>
+
 <html lang="es">
 
 <head>
+
   <meta charset="utf-8" />
+
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+
   <title>La Casa Del Tiramisu — El mejor postre italiano en Colima</title>
+
   <meta name="description"
     content="El auténtico Tiramisú italiano, artesanal y premium en Colima y Villa de Álvarez. Tres tamaños: Bambino, Mediano y Grande. Pedidos por WhatsApp." />
+
   <meta name="keywords"
     content="tiramisu colima, postres premium colima, la casa del tiramisu, postre italiano colima, king candy" />
+
   <meta property="og:type" content="website" />
+
   <meta property="og:title" content="La Casa Del Tiramisu — El mejor postre italiano en Colima" />
+
   <meta property="og:description"
     content="Artesanía y sabor italiano en cada bocado. Disfruta del mejor Tiramisú de la región. Pedidos directos por WhatsApp." />
+
   <meta property="og:image" content="https://kingcandy.mx/assets/hero-kraft.jpg" />
+
   <meta property="og:locale" content="es_MX" />
+
   <meta property="og:site_name" content="La Casa Del Tiramisu" />
+
   <meta name="twitter:card" content="summary_large_image" />
+
   <meta name="twitter:title" content="La Casa Del Tiramisu — El mejor postre italiano en Colima" />
+
   <meta name="twitter:description"
     content="El auténtico Tiramisú artesanal y premium directo a tu puerta en Colima y Villa de Álvarez." />
+
   <meta name="twitter:image" content="https://kingcandy.mx/assets/hero-kraft.jpg" />
+
   <link rel="icon" type="image/png" href="./assets/logo-k.png" />
+
   <link rel="preconnect" href="https://fonts.googleapis.com" />
+
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&display=swap"
     rel="stylesheet" />
+
   <link rel="stylesheet" href="./styles/extras.css" />
+
   <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+
   <script>
+
     tailwind.config = {
+
       theme: {
+
         extend: {
+
           fontFamily: {
+
             sans: ['Outfit', 'sans-serif'],
+
           },
+
           colors: {
+
             brandgold: '#D4AF37',
+
             brandchocolate: '#3D1F16',
+
             brandblack: '#070707',
+
             brandwhite: '#FFFFFF',
+
             brandkraft: '#F9F0E1',
+
             brandgray: '#F4F0EA',
+
             brandmarble: '#F2F2F2',
+
           },
+
         },
+
       },
+
     };
+
   </script>
+
   <script type="application/ld+json">
+
       {
+
         "@context": "https://schema.org",
+
         "@type": "LocalBusiness",
+
         "name": "La Casa Del Tiramisu",
+
         "image": "https://kingcandy.mx/assets/hero-kraft.jpg",
+
         "description": "El mejor Tiramisú artesanal y premium en Colima. Receta original italiana.",
+
         "address": {
+
           "@type": "PostalAddress",
+
           "streetAddress": "Av. Enrique Corona Morfín 709",
+
           "addressLocality": "Colima",
+
           "addressRegion": "Colima",
+
           "postalCode": "28017",
+
           "addressCountry": "MX"
+
         },
+
         "telephone": "+52 312 144 7493",
+
         "openingHours": "Mo-Su 10:00-22:00",
+
         "url": "https://kingcandy.mx",
+
         "sameAs": [
+
           "https://instagram.com/kingcandy.mx"
+
         ],
+
         "areaServed": ["Colima", "Villa de Álvarez", "Comala"]
+
       }
+
     </script>
+
 </head>
 
 <body class="bg-brandwhite text-brandblack font-sans selection:bg-brandgold selection:text-white">
 
-  <!-- ============================================================
-         NAVBAR
-    ============================================================ -->
   <header id="navbar" class="fixed w-full z-50 transition-all duration-300 py-6">
+
     <div class="max-w-6xl mx-auto px-6 flex justify-between items-center">
-      <!-- Logo -->
+
       <a href="#" class="flex items-end gap-0" aria-label="La Casa Del Tiramisu">
+
         <span class="text-xl font-black tracking-widest leading-none uppercase mb-3">
+
           <span class="text-brandchocolate">KING</span><span class="text-brandchocolate"> CANDY</span>
+
         </span>
 
       </a>
-      <!-- Nav links -->
+
       <nav class=" text-brandchocolate hidden md:flex gap-8 font-semibold text-sm tracking-wide">
-        <a href="#productos" class="hover:text-brandchocolate/80 transition-colors">Tallas</a>
+
+        <a href="#productos" class="hover:text-brandchocolate/80 transition-colors">Tamaños</a>
+
+        <a href="#donde-encontrarnos" class="hover:text-brandchocolate/80 transition-colors">¿Dónde encontrarnos?</a>
+
         <a href="#como-pedir" class="hover:text-brandchocolate/80 transition-colors">¿Cómo pedir?</a>
+
         <a href="#contacto" class="hover:text-brandchocolate/80 transition-colors">Contacto</a>
+
       </nav>
-      <!-- CTA -->
+
       <a href="https://wa.me/523121447493?text=Hola%20King%20Candy%2C%20quiero%20hacer%20un%20pedido%20de%20Tiramis%C3%BA%20%F0%9F%8D%B0"
         target="_blank" rel="noopener noreferrer"
         class="bg-brandchocolate text-brandwhite px-6 py-2.5 rounded-full font-bold text-sm hover:bg-brandchocolate/80 transition-all hover:scale-105 active:scale-95 flex items-center gap-2">
+
         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+
           <path
             d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z">
+
           </path>
+
         </svg>
+
         <span>Pedir ahora</span>
+
       </a>
+
     </div>
+
   </header>
 
   <main>
-    <!-- ============================================================
-           HERO
-      ============================================================ -->
+
     <section class="relative pt-28 pb-14 sm:pt-36 sm:pb-20 lg:pt-52 lg:pb-32 px-6 overflow-hidden">
-      <!-- Fondo Kraft decorativo -->
+
       <div class="absolute inset-0 -z-10 overflow-hidden">
+
         <div
           class="absolute top-0 right-0 w-[60vw] h-[60vw] bg-brandkraft/30 blur-3xl rounded-full translate-x-1/3 -translate-y-1/4">
+
         </div>
+
         <div class="absolute bottom-0 left-0 w-[40vw] h-[40vw] bg-brandmarble/50 blur-3xl rounded-full">
+
         </div>
+
       </div>
 
       <div class="max-w-6xl mx-auto grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
-        <!-- Texto -->
+
         <div class="relative z-10 text-center lg:text-left">
+
           <div
             class="inline-flex items-center gap-2 px-4 py-2 text-brandchocolate font-bold text-xs uppercase tracking-widest mb-5">
+
             La Casa Del Tiramisu
+
           </div>
+
           <h1
             class="text-5xl sm:text-6xl lg:text-8xl font-black leading-[0.9] tracking-tighter mb-5 uppercase text-brandblack/80">
+
             EL MEJOR<br />
+
             <span class="text-brandchocolate">TIRAMISU.</span>
+
           </h1>
+
           <p class="text-base sm:text-xl text-brandblack/60 mb-7 max-w-md font-medium leading-relaxed mx-auto lg:mx-0">
+
             El auténtico postre italiano Brindamos la mejor calidad y experiencia en Colima y
+
             Villa de Álvarez.
+
           </p>
+
           <div class="flex flex-wrap gap-4 justify-center lg:justify-start">
+
             <a href="#productos"
               class="bg-brandchocolate text-white px-7 py-3.5 rounded-full font-bold text-base sm:text-lg hover:bg-brandchocolate/80 transition-all flex items-center gap-2 shadow-lg shadow-brandchocolate/20 hover:-translate-y-1 active:translate-y-0">
+
               Ver Tamaños
+
               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
                 stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+
                 <path d="M5 12h14M12 5l7 7-7 7" />
+
               </svg>
+
             </a>
+
             <a href="https://instagram.com/kingcandy.mx" target="_blank" rel="noopener noreferrer"
               class="bg-white border-2 border-brandchocolate text-brandchocolate px-7 py-3.5 rounded-full font-bold text-base sm:text-lg hover:bg-brandchocolate hover:text-white transition-all flex items-center gap-2">
+
               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
                 stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+
                 <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+
                 <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+
                 <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
+
               </svg>
+
               Instagram
+
             </a>
+
           </div>
+
         </div>
 
-        <!-- Imagen Hero -->
         <div class="relative hidden lg:block">
+
           <div
             class="hero-img aspect-[4/5] rounded-[2rem] overflow-hidden relative shadow-2xl shadow-brandchocolate/20">
+
             <img src="./assets/Mediano.png" alt="Tiramisu Premium" class="w-full h-full object-cover" />
+
             <div class="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
-            <!-- Badge inferior -->
+
             <div class="absolute bottom-6 left-6 right-6">
+
               <div class="bg-white/95 backdrop-blur p-4 rounded-2xl flex items-center gap-4">
+
                 <div class="bg-brandchocolate text-white p-3 rounded-xl flex-shrink-0">
+
                   <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24"
                     fill="currentColor">
+
                     <path
                       d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
+
                   </svg>
+
                 </div>
+
                 <div>
+
                   <p class="font-bold text-xs uppercase text-brandblack/50 tracking-widest">El autentico de la Nonna</p>
+
                   <p class="font-black text-lg leading-none text-brandchocolate">Tu nuevo postre favorito</p>
+
                 </div>
+
               </div>
+
             </div>
+
           </div>
-          <!-- Glow -->
+
           <div
             class="absolute -z-10 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[110%] h-[110%] bg-gradient-to-tr from-brandchocolate/10 to-brandgold/5 blur-3xl rounded-full">
+
           </div>
+
         </div>
+
       </div>
+
     </section>
 
-    <!-- ============================================================
-           MARQUEE
-      ============================================================ -->
     <div
       class="bg-brandmarble py-4 overflow-hidden relative border-y-2 border-brandchocolate font-black uppercase tracking-widest text-[10px]">
+
       <div class="marquee-track flex whitespace-nowrap items-center">
+
         <div class="marquee-inner flex items-center">
+
           <span class="marquee-item text-brandchocolate">TIRAMISÚ LOVER</span>
+
           <span class="marquee-star text-brandblack/80">★</span>
+
           <span class="marquee-item text-brandchocolate/65">COLIMA Y VILLA DE ÁLVAREZ</span>
+
           <span class="marquee-star text-brandblack/80">★</span>
+
           <span class="marquee-item text-brandchocolate">SABOR ITALIANO</span>
+
           <span class="marquee-star text-brandblack/80">★</span>
+
           <span class="marquee-item text-brandchocolate/65">BAMBINO · MEDIANO · GRANDE</span>
+
           <span class="marquee-star text-brandblack/80">★</span>
+
           <span class="marquee-item text-brandchocolate">PEDIDOS POR WHATSAPP</span>
+
           <span class="marquee-star text-brandblack/80">★</span>
+
           <span class="marquee-item text-brandchocolate/65">PRÓXIMO CAMPEON TIRAMISU WORLD CUP</span>
+
           <span class="marquee-star text-brandblack/80">★</span>
+
         </div>
+
         <div class="marquee-inner flex items-center">
+
           <span class="marquee-item text-brandchocolate">TIRAMISÚ ARTESANAL</span>
+
           <span class="marquee-star text-brandblack/80">★</span>
+
           <span class="marquee-item text-brandchocolate/65">COLIMA Y VILLA DE ÁLVAREZ</span>
+
           <span class="marquee-star text-brandblack">★</span>
+
           <span class="marquee-item text-brandchocolate">SABOR ITALIANO PREMIUM</span>
+
           <span class="marquee-star text-brandblack">★</span>
+
           <span class="marquee-item text-brandchocolate/65">BAMBINO · MEDIANO · GRANDE</span>
+
           <span class="marquee-star text-brandblack">★</span>
+
           <span class="marquee-item text-brandchocolate">PEDIDOS POR WHATSAPP</span>
+
           <span class="marquee-star text-brandblack">★</span>
+
           <span class="marquee-item text-brandchocolate/65">EL MEJOR DE LA REGIÓN</span>
+
           <span class="marquee-star text-brandblack">★</span>
+
         </div>
+
         <div class="marquee-inner flex items-center">
+
         </div>
+
       </div>
+
     </div>
 
-    <!-- ============================================================
-           PRODUCTOS
-      ============================================================ -->
     <section id="productos" class="py-16 sm:py-24 px-4 sm:px-6 bg-white">
+
       <div class="max-w-6xl mx-auto">
-        <!-- Header -->
+
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-end mb-10 sm:mb-16 gap-2">
+
           <div>
+
             <h2
               class="text-3xl sm:text-4xl md:text-6xl font-black tracking-tighter mb-2 sm:mb-3 uppercase text-brandchocolate">
+
               NUESTROS
+
               TAMAÑOS.</h2>
+
             <p class="text-base sm:text-xl text-brandblack/40 font-medium">Elige el tamaño perfecto para tu momento.</p>
+
           </div>
+
         </div>
 
-        <!-- Grid -->
         <div class="grid sm:grid-cols-2 md:grid-cols-3 gap-6 sm:gap-8">
 
-          <!-- Producto 1: Bambino -->
           <div
             class="product-card group relative bg-white rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300">
+
             <div class="aspect-[4/5] overflow-hidden relative">
+
               <img src="./assets/bambino.png" alt="Tiramisú Bambino"
                 class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+
               <div
                 class="absolute top-4 left-4 bg-brandchocolate text-white text-xs font-bold uppercase tracking-widest px-3 py-1.5 rounded-full z-10">
+
                 Individual</div>
+
               <div
                 class="product-overlay absolute inset-0 bg-brandchocolate/20 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+
                 <a href="https://wa.me/523121447493?text=Hola%20King%20Candy%2C%20quiero%20el%20Tiramis%C3%BA%20Bambino%20(4%20oz)%20%F0%9F%8D%B0"
                   target="_blank" rel="noopener noreferrer"
                   class="buy-btn bg-brandchocolate text-white font-bold px-6 py-3 rounded-full transform translate-y-4 group-hover:translate-y-0 transition-all duration-300 flex items-center gap-2 hover:bg-brandchocolate/65">
+
                   <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
                     fill="currentColor">
+
                     <path
                       d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z">
+
                     </path>
+
                   </svg>
+
                   Lo quiero
+
                 </a>
+
               </div>
+
             </div>
+
             <div class="p-6">
+
               <h3
                 class="font-black text-xl text-brandchocolate mb-1 uppercase group-hover:text-brandchocolate/65 transition-colors">
+
                 Bambino</h3>
+
               <p class="text-brandblack/50 text-sm font-medium mb-4">La porción perfecta de 4 oz para calmar el antojo
+
                 individual con la mejor calidad.</p>
+
               <div class="flex justify-between items-center">
+
                 <p class="font-bold text-brandchocolate text-xl uppercase tracking-tighter">4 oz</p>
+
                 <p
                   class="bg-brandkraft px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest text-brandchocolate">
+
                   Individual</p>
+
               </div>
+
             </div>
+
           </div>
 
-          <!-- Producto 2: Mediano -->
           <div
             class="product-card group relative bg-white rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300">
+
             <div class="aspect-[4/5] overflow-hidden relative">
+
               <img src="./assets/Mediano2.png" alt="Tiramisú Mediano"
                 class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+
               <div
                 class="absolute top-4 left-4 bg-brandchocolate text-white text-xs font-bold uppercase tracking-widest px-3 py-1.5 rounded-full z-10">
+
                 Popular</div>
+
               <div
                 class="product-overlay absolute inset-0 bg-brandchocolate/20 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+
                 <a href="https://wa.me/523121447493?text=Hola%20King%20Candy%2C%20quiero%20el%20Tiramis%C3%BA%20Mediano%20(6-8%20personas)%20%F0%9F%8D%B0"
                   target="_blank" rel="noopener noreferrer"
                   class="buy-btn bg-brandchocolate text-white font-bold px-6 py-3 rounded-full transform translate-y-4 group-hover:translate-y-0 transition-all duration-300 flex items-center gap-2 hover:bg-brandchocolate/65">
+
                   <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
                     fill="currentColor">
+
                     <path
                       d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z">
+
                     </path>
+
                   </svg>
+
                   Lo quiero
+
                 </a>
+
               </div>
+
             </div>
+
             <div class="p-6">
+
               <h3
                 class="font-black text-xl text-brandchocolate mb-1 uppercase group-hover:text-brandchocolate/65 transition-colors">
+
                 Mediano</h3>
+
               <p class="text-brandblack/50 text-sm font-medium mb-4">Ideal para compartir en cenas familiares o
+
                 reuniones pequeñas. El balance perfecto.</p>
+
               <div class="flex justify-between items-center">
+
                 <p class="font-bold text-brandchocolate text-xl uppercase tracking-tighter">6-8 Personas</p>
+
                 <p
                   class="bg-brandkraft px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest text-brandchocolate">
+
                   Favorito</p>
+
               </div>
+
             </div>
+
           </div>
 
-          <!-- Producto 3: Grande -->
           <div
             class="product-card group relative bg-white rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300">
+
             <div class="aspect-[4/5] overflow-hidden relative">
+
               <img src="./assets/grande.png" alt="Tiramisú Grande"
                 class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+
               <div
                 class="absolute top-4 left-4 bg-brandchocolate text-white text-xs font-bold uppercase tracking-widest px-3 py-1.5 rounded-full z-10">
+
                 Premium XL</div>
+
               <div
                 class="product-overlay absolute inset-0 bg-brandchocolate/20 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+
                 <a href="https://wa.me/523121447493?text=Hola%20King%20Candy%2C%20quiero%20el%20Tiramis%C3%BA%20Grande%20(10-12%20personas)%20%F0%9F%8D%B0"
                   target="_blank" rel="noopener noreferrer"
                   class="buy-btn bg-brandchocolate text-white font-bold px-6 py-3 rounded-full transform translate-y-4 group-hover:translate-y-0 transition-all duration-300 flex items-center gap-2 hover:bg-brandchocolate/65">
+
                   <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
                     fill="currentColor">
+
                     <path
                       d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z">
+
                     </path>
+
                   </svg>
+
                   Lo quiero
+
                 </a>
+
               </div>
+
             </div>
+
             <div class="p-6">
+
               <h3
                 class="font-black text-xl text-brandchocolate mb-1 uppercase group-hover:text-brandchocolate/65 transition-colors">
+
                 Grande</h3>
+
               <p class="text-brandblack/50 text-sm font-medium mb-4">El protagonista de tus eventos. Pensado para
+
                 compartir y disfrutar al máximo.</p>
+
               <div class="flex justify-between items-center">
+
                 <p class="font-bold text-brandchocolate text-xl uppercase tracking-tighter">10-12 Personas</p>
+
                 <p
                   class="bg-brandkraft px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest text-brandchocolate">
+
                   Evento</p>
+
               </div>
+
             </div>
+
           </div>
 
+        </div>
+
+      </div>
+
+    </section>
+
+    <section id="donde-encontrarnos"
+      class="py-16 sm:py-24 px-4 sm:px-6 relative overflow-hidden bg-brandmarble text-center">
+      <div class="max-w-6xl mx-auto relative z-10">
+        <div class="mb-10 sm:mb-16">
+          <h2 class="text-3xl sm:text-4xl md:text-5xl font-black tracking-tighter mb-3 uppercase text-brandchocolate">
+            Nuestros Anfitriones
+          </h2>
+          <p class="text-base sm:text-lg text-brandblack/60 font-medium max-w-lg mx-auto">
+            Encuentra nuestro auténtico Tiramisú en estos establecimientos.
+          </p>
+        </div>
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
+          <div
+            class="bg-white rounded-3xl p-6 shadow-sm border border-brandchocolate/5 flex flex-col items-center justify-between group hover:shadow-xl transition-all duration-300">
+            <a href="https://instagram.com/kingcandy.mx" target="_blank" rel="noopener noreferrer"
+              class="w-full flex-1 flex flex-col items-center justify-start cursor-pointer">
+              <div class="h-[240px] w-full flex items-center justify-center mb-4">
+                <div
+                  class="w-24 h-24 rounded-full overflow-hidden bg-brandkraft/30 group-hover:scale-105 transition-transform flex items-center justify-center">
+                  <img src="./assets/logo-k.png" alt="King Candy" class="w-full h-full object-cover">
+                </div>
+              </div>
+              <h3 class="font-black text-lg text-brandchocolate uppercase mb-1 text-center leading-tight">King Candy
+              </h3>
+              <p class="text-xs text-brandblack/50 font-medium text-center">La Casa Del Tiramisu</p>
+            </a>
+            <a href="https://maps.app.goo.gl/dMn35A11WstyigcC8" target="_blank" rel="noopener noreferrer"
+              class="mt-4 text-xs font-bold text-brandchocolate bg-brandkraft px-4 py-2 rounded-full hover:bg-brandchocolate hover:text-white transition-colors flex items-center gap-1">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                <circle cx="12" cy="10" r="3"></circle>
+              </svg>
+              Ubicación
+            </a>
+          </div>
+
+          <div
+            class="bg-white rounded-3xl p-6 shadow-sm border border-brandchocolate/5 flex flex-col items-center justify-between group hover:shadow-xl transition-all duration-300">
+            <a href="https://www.instagram.com/lostaconesdemaria_?igsh=MWEyeDc2c256azQ0" target="_blank"
+              rel="noopener noreferrer" class="w-full flex-1 flex flex-col items-center justify-start cursor-pointer">
+              <div class="h-[240px] w-full flex items-center justify-center mb-4">
+                <div
+                  class="w-[200px] h-[200px] rounded-full overflow-hidden bg-transparent group-hover:scale-105 transition-transform flex items-center justify-center">
+                  <img src="./assets/tacones.png" alt="Los Tacones De Maria"
+                    class="w-full h-full object-contain mix-blend-multiply">
+                </div>
+              </div>
+              <h3 class="font-black text-lg text-brandchocolate uppercase mb-1 text-center leading-tight">Los Tacones De
+                Maria</h3>
+            </a>
+            <a href="https://maps.app.goo.gl/NYf87qhKpwCzSfK28" target="_blank" rel="noopener noreferrer"
+              class="mt-4 text-xs font-bold text-brandchocolate bg-brandkraft px-4 py-2 rounded-full hover:bg-brandchocolate hover:text-white transition-colors flex items-center gap-1">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                <circle cx="12" cy="10" r="3"></circle>
+              </svg>
+              Ubicación
+            </a>
+          </div>
+
+          <div
+            class="bg-white rounded-3xl p-6 shadow-sm border border-brandchocolate/5 flex flex-col items-center justify-between group hover:shadow-xl transition-all duration-300">
+            <a href="https://www.instagram.com/corteza_panaderiacolima?igsh=MWJ5cXI1MTI4OTN3Zw==" target="_blank"
+              rel="noopener noreferrer" class="w-full flex-1 flex flex-col items-center justify-start cursor-pointer">
+              <div class="h-[240px] w-full flex items-center justify-center mb-4">
+                <div
+                  class="w-[220px] h-[220px] rounded-full overflow-hidden bg-transparent group-hover:scale-105 transition-transform flex items-center justify-center">
+                  <img src="./assets/corteza.png" alt="Corteza Panaderia"
+                    class="w-full h-full object-contain mix-blend-multiply">
+                </div>
+              </div>
+              <h3 class="font-black text-lg text-brandchocolate uppercase mb-1 text-center leading-tight">Corteza
+                Panaderia</h3>
+            </a>
+            <a href="https://maps.app.goo.gl/3JxKbuYipvEX2uHS7" target="_blank" rel="noopener noreferrer"
+              class="mt-4 text-xs font-bold text-brandchocolate bg-brandkraft px-4 py-2 rounded-full hover:bg-brandchocolate hover:text-white transition-colors flex items-center gap-1">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                <circle cx="12" cy="10" r="3"></circle>
+              </svg>
+              Ubicación
+            </a>
+          </div>
+
+          <div
+            class="bg-white rounded-3xl p-6 shadow-sm border border-brandchocolate/5 flex flex-col items-center justify-between group hover:shadow-xl transition-all duration-300">
+            <a href="https://www.instagram.com/maraya.colima?igsh=ZDg0YWJ4dmh0YjV2" target="_blank"
+              rel="noopener noreferrer" class="w-full flex-1 flex flex-col items-center justify-start cursor-pointer">
+              <div class="h-[240px] w-full flex items-center justify-center mb-4">
+                <div
+                  class="w-[145px] h-[145px] rounded-full overflow-hidden bg-transparent group-hover:scale-105 transition-transform flex items-center justify-center">
+                  <img src="./assets/maraya.png" alt="Maraya" class="w-full h-full object-contain mix-blend-multiply">
+                </div>
+              </div>
+              <h3 class="font-black text-lg text-brandchocolate uppercase mb-1 text-center leading-tight">Maraya</h3>
+            </a>
+            <a href="https://maps.app.goo.gl/b6Qyid1UF4fbRaFp7" target="_blank" rel="noopener noreferrer"
+              class="mt-4 text-xs font-bold text-brandchocolate bg-brandkraft px-4 py-2 rounded-full hover:bg-brandchocolate hover:text-white transition-colors flex items-center gap-1">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                <circle cx="12" cy="10" r="3"></circle>
+              </svg>
+              Ubicación
+            </a>
+          </div>
+
+          <div
+            class="bg-white rounded-3xl p-6 shadow-sm border border-brandchocolate/5 flex flex-col items-center justify-between group hover:shadow-xl transition-all duration-300">
+            <a href="https://www.instagram.com/domo.training?igsh=aGMzbjhhdWc4M3h5" target="_blank"
+              rel="noopener noreferrer" class="w-full flex-1 flex flex-col items-center justify-start cursor-pointer">
+              <div class="h-[240px] w-full flex items-center justify-center mb-4">
+                <div style="width: 145px; height: 145px;"
+                  class="relative flex-shrink-0 rounded-full overflow-hidden bg-white/90 group-hover:scale-105 transition-transform duration-300 flex items-center justify-center">
+                  <img src="./assets/domo2.png" alt="Domo Training Club"
+                    class="w-full h-full object-cover mix-blend-multiply scale-[1.10] translate-y-[-2px] translate-x-[2px]">
+                </div>
+              </div>
+              <h3 class="font-black text-lg text-brandchocolate uppercase mb-1 text-center leading-tight">Domo Training
+                Club
+              </h3>
+            </a>
+            <a href="https://maps.app.goo.gl/ajq2fBnbZikAswTs5" target="_blank" rel="noopener noreferrer"
+              class="mt-4 text-xs font-bold text-brandchocolate bg-brandkraft px-4 py-2 rounded-full hover:bg-brandchocolate hover:text-white transition-colors flex items-center gap-1">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                <circle cx="12" cy="10" r="3"></circle>
+              </svg>
+              Ubicación
+            </a>
+          </div>
+
+          <div
+            class="bg-white rounded-3xl p-6 shadow-sm border border-brandchocolate/5 flex flex-col items-center justify-between group hover:shadow-xl transition-all duration-300">
+            <a href="https://www.instagram.com/conbrankogrillhouse?igsh=dmtuOWx1NGx2dDJy" target="_blank"
+              rel="noopener noreferrer" class="w-full flex-1 flex flex-col items-center justify-start cursor-pointer">
+              <div class="h-[240px] w-full flex items-center justify-center mb-4">
+                <div style="width: 145px; height: 145px;"
+                  class="relative flex-shrink-0 rounded-full overflow-hidden bg-white/90 group-hover:scale-105 transition-transform duration-300 flex items-center justify-center">
+                  <img src="./assets/branko.png" alt="Con Branko Grill House"
+                    class="w-full h-full object-cover mix-blend-multiply">
+                </div>
+              </div>
+              <h3 class="font-black text-lg text-brandchocolate uppercase mb-1 text-center leading-tight">Con Branko
+                Grill House
+              </h3>
+            </a>
+            <a href="https://maps.app.goo.gl/Z5brZ77Zt1CXk5ws6" target="_blank" rel="noopener noreferrer"
+              class="mt-4 text-xs font-bold text-brandchocolate bg-brandkraft px-4 py-2 rounded-full hover:bg-brandchocolate hover:text-white transition-colors flex items-center gap-1">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                <circle cx="12" cy="10" r="3"></circle>
+              </svg>
+              Ubicación
+            </a>
+          </div>
         </div>
       </div>
     </section>
 
-    <!-- ============================================================
-           CÓMO PEDIR
-      ============================================================ -->
-    <section class="py-16 sm:py-24 px-4 sm:px-6 bg-brandkraft/10 relative overflow-hidden">
-      <!-- Textura Kraft de fondo -->
+    <section id="como-pedir" class="py-16 sm:py-24 px-4 sm:px-6 bg-brandkraft/10 relative overflow-hidden">
+
       <div class="absolute inset-0 bg-kraft opacity-30 -z-10"></div>
 
       <div class="max-w-6xl mx-auto relative z-10">
+
         <div class="text-center mb-10 sm:mb-16">
+
           <h2 class="text-3xl sm:text-4xl md:text-5xl font-black tracking-tighter mb-3 uppercase text-brandchocolate">
+
             ¿Cómo pedir?</h2>
+
           <p class="text-base sm:text-lg text-brandblack/60 font-medium max-w-lg mx-auto">Disfruta de la mejor
+
             experiencia premium en pocos pasos.</p>
+
         </div>
+
         <div class="grid sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
+
           <div
             class="how-card text-center p-8 rounded-3xl bg-white/80 backdrop-blur shadow-sm border border-brandgold/10">
+
             <div
               class="w-16 h-16 rounded-2xl bg-brandchocolate text-white flex items-center justify-center mx-auto mb-5 text-3xl font-black">
+
               1</div>
+
             <h3 class="font-black text-xl mb-2 uppercase text-brandchocolate/80">Elige</h3>
+
             <p class="text-brandblack/60 text-sm font-medium">Selecciona el tamaño ideal para tu antojo o evento
+
               especial.</p>
+
           </div>
+
           <div
             class="how-card text-center p-8 rounded-3xl bg-white/80 backdrop-blur shadow-sm border border-brandgold/10">
+
             <div
               class="w-16 h-16 rounded-2xl bg-brandchocolate text-white flex items-center justify-center mx-auto mb-5 text-3xl font-black">
+
               2</div>
+
             <h3 class="font-black text-xl mb-2 uppercase text-brandchocolate/80">WhatsApp</h3>
+
             <p class="text-brandblack/60 text-sm font-medium">Escríbenos directamente para coordinar el pago y la
+
               entrega.</p>
+
           </div>
+
           <div
             class="how-card text-center p-8 rounded-3xl bg-white/80 backdrop-blur shadow-sm border border-brandgold/10">
+
             <div
               class="w-16 h-16 rounded-2xl bg-brandchocolate text-white flex items-center justify-center mx-auto mb-5 text-3xl font-black">
+
               3</div>
+
             <h3 class="font-black text-xl mb-2 uppercase text-brandchocolate/80">Disfruta</h3>
+
             <p class="text-brandblack/60 text-sm font-medium">Recibe tu tiramisu en Colima o Villa de Álvarez, contamos
+
               con envio a domicilio.</p>
+
           </div>
+
         </div>
+
       </div>
+
     </section>
 
-    <!-- ============================================================
-           CTA BANNER
-      ============================================================ -->
     <section class="py-16 sm:py-24 px-4 sm:px-6 relative overflow-hidden bg-brandchocolate text-white text-center">
-      <!-- Glass effect -->
+
       <div class="absolute inset-0 bg-marble opacity-5 -z-10"></div>
 
       <div class="relative z-10 max-w-3xl mx-auto">
+
         <h2 class="text-4xl sm:text-5xl md:text-7xl font-black tracking-tighter mb-5 uppercase leading-[0.9]">
+
           ¿Tienes un <span class="text-brandwhite italic">evento?</span>
+
         </h2>
+
         <p class="text-base sm:text-xl md:text-2xl font-medium mb-8 sm:mb-10 text-white/70 max-w-xl mx-auto">
+
           Lleva la experiencia premium de La Casa Del Tiramisu a tus celebraciones. Pedidos personalizados.
+
         </p>
+
         <a href="https://wa.me/523121447493?text=Hola%20King%20Candy%2C%20busco%20un%20pedido%20especial%20para%20evento%20%F0%9F%8D%B0"
           target="_blank" rel="noopener noreferrer"
           class="inline-flex items-center gap-3 bg-brandwhite text-brandchocolate px-10 py-5 rounded-full font-black text-xl uppercase tracking-widest hover:scale-105 transition-transform shadow-2xl shadow-brandgold/20">
+
           <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="currentColor">
+
             <path
               d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z">
+
             </path>
+
           </svg>
+
           Escríbenos ahora
+
         </a>
+
       </div>
+
     </section>
 
-    <!-- ============================================================
-           CONTACTO
-      ============================================================ -->
     <section id="contacto" class="py-16 sm:py-24 px-4 sm:px-6 bg-brandmarble/50 relative overflow-hidden">
-      <!-- Background texture -->
+
       <div class="absolute inset-0 bg-marble opacity-20 -z-10"></div>
 
       <div class="max-w-6xl mx-auto">
+
         <div class="grid md:grid-cols-2 gap-8 sm:gap-12 items-center">
+
           <div>
+
             <p class="text-brandblack/80 font-bold uppercase tracking-widest text-sm mb-3">Conecta con nosotros</p>
+
             <h2 class="text-4xl md:text-5xl font-black tracking-tighter mb-8 uppercase text-brandchocolate">Haz tu
+
               pedido hoy.</h2>
+
             <dl class="space-y-6">
+
               <div class="flex gap-4 items-start">
+
                 <div
                   class="w-12 h-12 bg-green-50 text-green-600 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-sm border border-green-100">
+
                   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
                     fill="currentColor">
+
                     <path
                       d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z">
+
                     </path>
+
                   </svg>
+
                 </div>
+
                 <div>
+
                   <dt class="font-black text-brandblack/80 uppercase text-xs tracking-widest mb-1">WhatsApp</dt>
+
                   <dd><a href="https://wa.me/523121447493?text=Hola%20King%20Candy%20%F0%9F%91%8B" target="_blank"
                       rel="noopener" class="text-lg font-bold text-brandblack/60">+52
+
                       312 144
+
                       7493</a></dd>
+
                 </div>
+
               </div>
+
               <div class="flex gap-4 items-start">
+
                 <div
                   class="w-12 h-12 bg-brandchocolate/5 text-brandchocolate rounded-2xl flex items-center justify-center flex-shrink-0 shadow-sm border border-brandchocolate/10">
+
                   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
                     stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+
                     <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+
                     <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+
                     <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
+
                   </svg>
+
                 </div>
+
                 <div>
+
                   <dt class="font-black text-brandblack/80 uppercase text-xs tracking-widest mb-1">Instagram</dt>
+
                   <dd><a href="https://instagram.com/kingcandy.mx" target="_blank" rel="noopener"
                       class="text-lg font-bold text-brandblack/60">@kingcandy.mx</a>
+
                   </dd>
+
                 </div>
+
               </div>
+
               <div class="flex gap-4 items-start">
+
                 <div
                   class="w-12 h-12 bg-brandchocolate/5 text-brandchocolate rounded-2xl flex items-center justify-center flex-shrink-0 shadow-sm border border-brandchocolate/10">
+
                   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
                     stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+
                     <circle cx="12" cy="12" r="10"></circle>
+
                     <polyline points="12 6 12 12 16 14"></polyline>
+
                   </svg>
+
                 </div>
+
                 <div>
+
                   <dt class="font-black text-brandblack/80 uppercase text-xs tracking-widest mb-1">Horarios</dt>
+
                   <dd class="text-lg font-bold text-brandblack/60">10:00 AM – 10:00 PM</dd>
+
                 </div>
+
               </div>
+
             </dl>
+
           </div>
-          <!-- Tarjeta socials -->
+
           <div
             class="bg-white rounded-[2rem] p-10 shadow-2xl shadow-brandchocolate/5 border border-brandchocolate/5 text-center relative overflow-hidden group">
+
             <div
               class="absolute top-0 right-0 w-32 h-32 bg-brandchocolate/5 rounded-full blur-3xl -mr-16 -mt-16 group-hover:bg-brandchocolate/10 transition-colors">
+
             </div>
+
             <p class="text-[10px] font-black uppercase tracking-[0.3em] text-brandblack/20 mb-8">Síguenos en redes</p>
+
             <div class="flex justify-center gap-6 mb-8">
+
               <a href="https://instagram.com/kingcandy.mx" target="_blank" rel="noopener noreferrer"
                 class="w-20 h-20 rounded-[2rem] bg-brandchocolate/5 flex items-center justify-center text-brandblack hover:bg-brandchocolate hover:text-white transition-all hover:scale-105 active:scale-95"
                 aria-label="Instagram">
+
                 <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none"
                   stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+
                   <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+
                   <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+
                   <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
+
                 </svg>
+
               </a>
+
               <a href="https://wa.me/523121447493?text=Hola%20King%20Candy%20%F0%9F%91%8B" target="_blank"
                 rel="noopener noreferrer"
                 class="w-20 h-20 rounded-[2rem] bg-brandchocolate/5 flex items-center justify-center text-brandblack hover:bg-brandchocolate hover:text-white transition-all hover:scale-105 active:scale-95"
                 aria-label="WhatsApp">
+
                 <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="currentColor">
+
                   <path
                     d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z">
+
                   </path>
+
                 </svg>
+
               </a>
+
             </div>
+
             <p class="text-3xl font-black text-brandblack mb-3">@kingcandy.mx</p>
+
             <p class="text-brandblack/40 font-medium max-w-[200px] mx-auto text-sm leading-relaxed">Nuestros postres,
+
               novedades y pedidos especiales.</p>
+
           </div>
+
         </div>
+
       </div>
+
       </div>
+
       </div>
+
     </section>
+
   </main>
 
-  <!-- ============================================================
-         FOOTER
-    ============================================================ -->
   <footer class="bg-brandblack/90 text-white pt-24 pb-12 px-6 relative overflow-hidden">
+
     <div
       class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-brandchocolate/0 via-brandchocolate to-brandchocolate/0">
+
     </div>
 
     <div class="max-w-6xl mx-auto grid sm:grid-cols-2 md:grid-cols-3 gap-10 sm:gap-16 mb-16 sm:mb-20">
+
       <div>
+
         <div class="flex items-end gap-0.5 mb-8">
+
           <span class="text-2xl font-black tracking-widest leading-none uppercase mb-1.5">
+
             <span class="font-black uppercase tracking-[0.2em] text-xs text-brandwhite">KING</span><span class="font-black
+
               uppercase tracking-[0.2em] text-xs text-brandwhite">CANDY</span>
+
           </span>
+
         </div>
+
         <p class="text-white/40 text-sm font-medium leading-relaxed max-w-xs">
+
           Dedicados a perfeccionar el arte del tiramisú en Colima desde 2020. Calidad y frescura garantizada en
+
           cada entrega.
+
         </p>
+
       </div>
+
       <div>
+
         <h4 class="font-black uppercase tracking-[0.2em] text-xs text-brandwhite mb-8">Explora</h4>
+
         <div class="flex flex-col gap-4 text-sm font-bold">
+
           <a href="#productos"
             class="text-white/60 hover:text-brandchocolate transition-colors w-fit flex items-center gap-2 group">
+
             <span
               class="w-1.5 h-1.5 rounded-full bg-brandchocolate opacity-0 group-hover:opacity-100 transition-opacity"></span>
+
             Menú
+
           </a>
+
           <a href="#como-pedir"
             class="text-white/60 hover:text-brandchocolate transition-colors w-fit flex items-center gap-2 group">
+
             <span
               class="w-1.5 h-1.5 rounded-full bg-brandchocolate opacity-0 group-hover:opacity-100 transition-opacity"></span>
+
             Proceso de Compra
+
           </a>
+
           <a href="#contacto"
             class="text-white/60 hover:text-brandchocolate transition-colors w-fit flex items-center gap-2 group">
+
             <span
               class="w-1.5 h-1.5 rounded-full bg-brandchocolate opacity-0 group-hover:opacity-100 transition-opacity"></span>
+
             Atención Directa
+
           </a>
+
         </div>
+
       </div>
+
       <div>
+
         <h4 class="font-black uppercase tracking-[0.2em] text-xs text-brandwhite mb-8">Nuestras Redes</h4>
+
         <div class="flex gap-4">
+
           <a href="https://instagram.com/kingcandy.mx" target="_blank" rel="noopener noreferrer"
             class="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-brandchocolate hover:text-white transition-all hover:scale-110"
             aria-label="Instagram">
+
             <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none"
               stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+
               <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+
               <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+
               <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
+
             </svg>
+
           </a>
+
           <a href="https://wa.me/523121447493?text=Hola%20King%20Candy%20%F0%9F%91%8B" target="_blank"
             rel="noopener noreferrer"
             class="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-brandchocolate hover:text-white transition-all hover:scale-110"
             aria-label="WhatsApp">
+
             <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+
               <path
                 d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z">
+
               </path>
+
             </svg>
+
           </a>
+
         </div>
+
       </div>
+
     </div>
+
     <div
       class="max-w-6xl mx-auto border-t border-white/5 pt-12 flex flex-col md:flex-row justify-between items-center gap-6 text-white/20 text-[10px] font-black uppercase tracking-[0.3em]">
+
       <p>© <span id="year"></span> King Candy — La Casa Del Tiramisu.</p>
+
       <p>Colima · Villa de Álvarez · Comala</p>
+
     </div>
+
   </footer>
 
   <script src="./js/main.js" type="module"></script>
-  <!-- Firebase Analytics — credenciales en firebase.js (gitignored) -->
+
   <script type="module" src="./firebase.js"></script>
+
 </body>
 
 </html>

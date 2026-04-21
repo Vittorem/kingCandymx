@@ -9,6 +9,12 @@ public/firebase.js
 .env.local
 .env.*.local
 
+# Cache de Firebase CLI
+.firebase/
+
+# Logs y capturas de Playwright MCP
+.playwright-mcp/
+
 # Logs
 npm-debug.log*
 yarn-debug.log*
