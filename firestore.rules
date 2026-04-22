@@ -1,0 +1,13 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{userId}/{document=**} {
+      // Require the user to be authenticated AND have a verified email.
+      // Google accounts always have emailVerified = true.
+      // Email/password accounts must complete verification before accessing data.
+      allow read, write: if request.auth != null
+        && request.auth.uid == userId
+        && request.auth.token.email_verified == true;
+    }
+  }
+}
