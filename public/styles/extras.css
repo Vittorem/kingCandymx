@@ -83,6 +83,22 @@
   color: #D4AF37;
   letter-spacing: -0.02em;
 }
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.reveal {
+  opacity: 0;
+  transform: translateY(18px);
+  transition: opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1), transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.reveal.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
 *:focus-visible {
   outline: 2px solid #D4AF37;
   outline-offset: 3px;
@@ -91,6 +107,11 @@
   .marquee-inner {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
+  }
+  .reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
   }
 }
 
