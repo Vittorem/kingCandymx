@@ -13,9 +13,13 @@
   padding-bottom: 0.75rem;
 }
 .bg-kraft {
-  background-color: #F9F0E1;
-  background-image: radial-gradient(rgba(61, 31, 22, 0.04) 1px, transparent 0);
-  background-size: 24px 24px;
+  background-color: #EFE0C9;
+  background-image:
+    radial-gradient(rgba(61, 31, 22, 0.06) 1px, transparent 0),
+    radial-gradient(rgba(139, 94, 60, 0.05) 1px, transparent 0),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.25) 0%, rgba(212, 175, 55, 0.04) 50%, rgba(61, 31, 22, 0.04) 100%);
+  background-size: 22px 22px, 37px 37px, 100% 100%;
+  background-position: 0 0, 11px 14px, 0 0;
 }
 .bg-marble {
   background-color: #F2F2F2;
